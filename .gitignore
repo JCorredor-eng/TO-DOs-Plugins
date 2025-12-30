@@ -2,5 +2,8 @@
 src/target
 src/node_modules
 
+# Environment variables (local configuration)
+.env
+
 # Snyk Security Extension - AI Rules (auto-generated)
 .github/instructions/snyk_rules.instructions.md

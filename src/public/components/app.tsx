@@ -1,25 +1,10 @@
-import React, { useState } from 'react';
-import { i18n } from '@osd/i18n';
-import { FormattedMessage, I18nProvider } from '@osd/i18n/react';
-import { BrowserRouter as Router } from 'react-router-dom';
-
-import {
-  EuiButton,
-  EuiHorizontalRule,
-  EuiPage,
-  EuiPageBody,
-  EuiPageContent,
-  EuiPageContentBody,
-  EuiPageContentHeader,
-  EuiPageHeader,
-  EuiTitle,
-  EuiText,
-} from '@elastic/eui';
-
+import React from 'react';
+import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
 import { CoreStart } from '../../../../src/core/public';
 import { NavigationPublicPluginStart } from '../../../../src/plugins/navigation/public';
-
-import { PLUGIN_ID, PLUGIN_NAME } from '../../common';
+import { PLUGIN_ID } from '../../common';
+import { TodosPage } from '../features/todos';
+import { CustomI18nProvider } from '../contexts';
 
 interface CustomPluginAppDeps {
   basename: string;
@@ -28,89 +13,45 @@ interface CustomPluginAppDeps {
   navigation: NavigationPublicPluginStart;
 }
 
+/**
+ * Main application component for the Custom Plugin.
+ *
+ * Wraps the application with:
+ * - React Router for navigation
+ * - Custom i18n provider for dynamic language switching
+ * - OpenSearch Dashboards navigation UI
+ *
+ * @param props - Component dependencies
+ * @param props.basename - Base URL path for the application
+ * @param props.notifications - OpenSearch Dashboards notifications service
+ * @param props.http - OpenSearch Dashboards HTTP service
+ * @param props.navigation - OpenSearch Dashboards navigation plugin
+ */
 export const CustomPluginApp = ({
   basename,
   notifications,
   http,
   navigation,
 }: CustomPluginAppDeps) => {
-  // Use React hooks to manage state.
-  const [timestamp, setTimestamp] = useState<string | undefined>();
-
-  const onClickHandler = () => {
-    // Use the core http service to make a response to the server API.
-    http.get('/api/custom_plugin/example').then((res) => {
-      setTimestamp(res.time);
-      // Use the core notifications service to display a success message.
-      notifications.toasts.addSuccess(
-        i18n.translate('customPlugin.dataUpdated', {
-          defaultMessage: 'Data updated',
-        })
-      );
-    });
-  };
-
-  // Render the application DOM.
-  // Note that `navigation.ui.TopNavMenu` is a stateful component exported on the `navigation` plugin's start contract.
   return (
     <Router basename={basename}>
-      <I18nProvider>
+      <CustomI18nProvider>
         <>
           <navigation.ui.TopNavMenu
             appName={PLUGIN_ID}
             showSearchBar={true}
             useDefaultBehaviors={true}
           />
-          <EuiPage restrictWidth="1000px">
-            <EuiPageBody component="main">
-              <EuiPageHeader>
-                <EuiTitle size="l">
-                  <h1>
-                    <FormattedMessage
-                      id="customPlugin.helloWorldText"
-                      defaultMessage="{name}"
-                      values={{ name: PLUGIN_NAME }}
-                    />
-                  </h1>
-                </EuiTitle>
-              </EuiPageHeader>
-              <EuiPageContent>
-                <EuiPageContentHeader>
-                  <EuiTitle>
-                    <h2>
-                      <FormattedMessage
-                        id="customPlugin.congratulationsTitle"
-                        defaultMessage="Congratulations, you have successfully created a new OpenSearch Dashboards Plugin!"
-                      />
-                    </h2>
-                  </EuiTitle>
-                </EuiPageContentHeader>
-                <EuiPageContentBody>
-                  <EuiText>
-                    <p>
-                      <FormattedMessage
-                        id="customPlugin.content"
-                        defaultMessage="Look through the generated code and check out the plugin development documentation."
-                      />
-                    </p>
-                    <EuiHorizontalRule />
-                    <p>
-                      <FormattedMessage
-                        id="customPlugin.timestampText"
-                        defaultMessage="Last timestamp: {time}"
-                        values={{ time: timestamp ? timestamp : 'Unknown' }}
-                      />
-                    </p>
-                    <EuiButton type="primary" size="s" onClick={onClickHandler}>
-                      <FormattedMessage id="customPlugin.buttonText" defaultMessage="Get data" />
-                    </EuiButton>
-                  </EuiText>
-                </EuiPageContentBody>
-              </EuiPageContent>
-            </EuiPageBody>
-          </EuiPage>
+          <Switch>
+            <Route path="/todos">
+              <TodosPage http={http} notifications={notifications} />
+            </Route>
+            <Route path="/">
+              <Redirect to="/todos" />
+            </Route>
+          </Switch>
         </>
-      </I18nProvider>
+      </CustomI18nProvider>
     </Router>
   );
 };

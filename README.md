@@ -1,335 +1,408 @@
-# Set up the development environment
+# OpenSearch Dashboards TODO Plugin
 
-## Requirements
+A production-ready TODO management plugin for OpenSearch Dashboards 2.16.0, featuring a complete CRUD system with advanced search, filtering, and analytics capabilities.
 
-The developer environment is defined through a `docker-compose.yml` file.
+## Table of Contents
 
-To deploy it, you need one of the following:
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Quick Start](#quick-start)
+- [Documentation](#documentation)
+- [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
+- [Running Tests](#running-tests)
+- [Development Workflow](#development-workflow)
+- [Support](#support)
 
--   [Docker Desktop][docker-desktop]
--   [Docker Engine][docker-engine]
--   [Compose standalone][docker-compose]
+## Overview
 
-> The recent versions of `docker` CLI has a built-in `compose` command that is similar
-> to the `docker-compose` standalone. If your `docker` CLI thas the builtin-in `compose`
-> command, you don't need to install it. See the help of your `docker` CLI using:
->
-> ```shell
-> docker --help
-> ```
+This plugin provides a comprehensive task management system designed for OpenSearch Dashboards, with advanced analytics and compliance tracking capabilities tailored for security professionals and compliance teams.
 
-### Virtual memory
+The plugin demonstrates best practices for OpenSearch Dashboards plugin development including:
 
-You'll need to increase the virtual memory limit in your system to run OpenSearch /
-Elastic.
+- **Layered Architecture**: Clean separation between Routes, Controllers, Services, and Repositories
+- **Type Safety**: Full TypeScript implementation with strict type checking
+- **Data Validation**: Input validation at all boundaries using `@osd/config-schema`
+- **DTO Pattern**: Well-defined API contracts between frontend and backend
+- **Repository Pattern**: Single point of OpenSearch interaction
+- **Feature-First Organization**: Frontend code organized by feature for better maintainability
+- **Comprehensive Testing**: 250+ tests covering backend services, frontend components, and analytics features
+- **Analytics Architecture**: Priority, severity, due date, and compliance framework tracking
+- **Zero-Downtime Migrations**: Non-breaking schema evolution for analytics fields
 
-On Linux, you can increase the limits by running the following command as **root**:
+## Key Features
 
-```shell
-sysctl -w vm.max_map_count=262144
+### Core Functionality
+
+- **Full CRUD Operations**: Create, read, update, and delete TODO items with rich metadata
+- **Advanced Search**: Full-text search across titles and descriptions with fuzzy matching
+- **Multi-Filter Support**: Filter by status, tags, assignee, priority, severity, compliance frameworks, and date ranges
+- **Server-Side Pagination**: Efficient handling of large datasets with configurable page sizes (up to 100 items per page)
+- **Flexible Sorting**: Sort by created date, updated date, completed date, title, status, priority, severity, or due date
+- **Tag-Based Organization**: Categorize tasks with multiple tags (up to 20 per item)
+- **Status Tracking**: Track tasks through three lifecycle states (planned, done, error)
+- **Assignment Management**: Assign tasks to team members for accountability
+
+### Analytics Features
+
+- **Priority Management**: Four-tier priority system (low, medium, high, critical) for task urgency tracking
+- **Severity Classification**: Five-level severity assessment (info, low, medium, high, critical) for impact evaluation
+- **Due Date Tracking**: ISO 8601 date support with automatic overdue detection for tasks past deadline
+- **Compliance Framework Association**: Link tasks to regulatory standards (PCI-DSS, ISO-27001, SOX, HIPAA, GDPR, etc.) - up to 10 frameworks per task
+- **Overdue Detection**: Automatic identification of tasks that are overdue (past due date AND not completed)
+- **Advanced Filtering**: Filter by priority levels, severity levels, compliance frameworks, due date ranges, and overdue status
+- **Multi-Dimensional Sorting**: Sort by priority, severity, or due date to support risk-based workflows
+
+### Data Visualization
+
+- **Status Distribution Chart**: Visual breakdown of tasks by status
+- **Top Tags Analytics**: Most frequently used tags with counts
+- **Completion Timeline**: Time-series chart showing completed tasks over time
+- **Real-Time Statistics**: Aggregated metrics updated on every operation
+- **Priority/Severity Badges**: Color-coded visual indicators in table view
+- **Overdue Highlights**: Visual warnings for tasks past their due date
+
+### Data Persistence
+
+- **OpenSearch Storage**: All data persisted in OpenSearch 2.16.0 index with analytics-optimized mappings
+- **Automatic Index Management**: Index created automatically with support for date fields and keyword aggregations
+- **Zero-Downtime Schema Evolution**: Analytics fields added via non-breaking schema updates
+- **Audit Trail**: Created, updated, and completed timestamps for all items
+- **Date Field Optimization**: ISO 8601 date format with strict validation for due date tracking
+
+## Quick Start
+
+### Prerequisites
+
+- Docker Desktop or Docker Engine with Docker Compose
+- At least 4GB available RAM
+- Port 5601 available (or modify `docker-compose.yml`)
+
+### Step 1: Increase Virtual Memory (Linux/macOS)
+
+OpenSearch requires higher virtual memory limits:
+
+```bash
+sudo sysctl -w vm.max_map_count=262144
 ```
 
-Additional information [here][vm-max-count].
-
-## Development environment
-
-The `docker-compose.yml` file defines the development environment, which is composed by
-the following services:
-
--   **os1**: OpenSearch node v2.14.0, also known as the _indexer_.
--   **osd**: OpenSearch Dashboards v2.14.0 (in development mode).
-
-The **osd** service exposes its internal port 5601 and maps it using the host's 5601 port.
-Be sure that this port is free to use.
-
-This container also has the following [volumes][docker-volumes]:
-
--   plugin's source code directory ([src/](./src/)), which is mounted to the
-    `/home/node/kbn/plugins/custom_plugin` directory within the container.
--   configuration files for OpenSearch Dashboards. **You do not need to edit this file**.
-
-### The Docker Compose environment
-
-> Use `docker-compose` instead if you are using the **standalone** version of Compose.
-
-Before starting the environment, check that the port `5601` from your machine is not in
-use, or change it in the `docker-compose.yml` file to any other port.
-
-```yml
-# docker-compose.yml
-- ports
-  - 5601:5601
+To make this permanent on Linux, add to `/etc/sysctl.conf`:
+```
+vm.max_map_count=262144
 ```
 
-The number on the left is the port from your machine.
+### Step 2: Start Docker Containers
 
-#### Start
+```bash
+# Navigate to project directory
+cd /path/to/dev_environment
 
-Using a terminal, place yourself in the same folder as the `docker-compose.yml` file and
-start the environment as follows:
-
-```shell
+# Start containers
 docker compose up -d
-```
 
-Output:
-
-```
-[+] Running 3/3
- ⠿ Network dev_environment_default  Created                                 0.0s
- ⠿ Container dev_environment-os1-1  Healthy                                12.4s
- ⠿ Container dev_environment-osd-1  Started                                12.7s
-```
-
-Check the containers are running:
-
-```shell
+# Verify containers are running
 docker compose ps
 ```
 
-Output:
-
-```log
-NAME                    COMMAND                  SERVICE             STATUS              PORTS
-dev_environment-os1-1   "./opensearch-docker…"   os1                 running (healthy)   9200/tcp, 9300/tcp, 9600/tcp, 9650/tcp
-dev_environment-osd-1   "tail -f /dev/null"      osd                 running             0.0.0.0:5601->5601/tcp, :::5601->5601/tcp
+Expected output:
+```
+NAME                    STATUS              PORTS
+dev_environment-os1-1   running (healthy)   9200/tcp, 9300/tcp
+dev_environment-osd-1   running             0.0.0.0:5601->5601/tcp
 ```
 
-#### Stop
+### Step 3: Start OpenSearch Dashboards
 
-```shell
-docker compose stop
-```
+The OpenSearch Dashboards server must be started manually in development mode.
 
-#### Destroy
+**Option A: Using VS Code (Recommended)**
 
-```shell
-docker compose down
-```
+1. Install the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension
+2. Open Command Palette (Cmd/Ctrl + Shift + P)
+3. Select "Dev Containers: Attach to Running Container"
+4. Choose `dev_environment-osd-1`
+5. Open terminal in the attached VS Code window
+6. Run:
+   ```bash
+   cd /home/node/kbn
+   yarn start --no-base-path
+   ```
 
-#### Summary
+**Option B: Using Docker Exec**
 
--   `docker` CLI
+```bash
+# Attach to the container
+docker exec -it dev_environment-osd-1 bash
 
-    | Action          | Command              |
-    | --------------- | -------------------- |
-    | Start           | docker compose up -d |
-    | Stop            | docker compose stop  |
-    | Stop and remove | docker compose down  |
-
--   `docker-compose` standalone
-
-    | Action          | Command              |
-    | --------------- | -------------------- |
-    | Start           | docker-compose up -d |
-    | Stop            | docker-compose stop  |
-    | Stop and remove | docker-compose down  |
-
-### The OpenSearch Dashboards server
-
-The OpenSearch Dashboards server does not start automatically in development mode. You
-need to do this manually.
-
-The easiest way to develop is to [attach][attach-container] a Visual Studio Code instance
-to the container.
-
-Access the container and run the following command, being at the `/home/node/kbn` path:
-
-```shell
+# Inside the container
+cd /home/node/kbn
 yarn start --no-base-path
 ```
 
-Output:
+### Step 4: Wait for Optimization
 
-```log
-yarn run v1.22.19
-$ node scripts/opensearch_dashboards --dev --no-base-path
-  log   [10:40:58.819] [info][plugins-service] Plugin "dataSourceManagement" has been disabled since the following direct or transitive dependencies are missing or disabled: [dataSource]
-  log   [10:40:58.824] [info][plugins-service] Plugin "dataSource" is disabled.
-  log   [10:40:58.824] [info][plugins-service] Plugin "visTypeXy" is disabled.
-  log   [10:40:58.982] [info][plugins-service] Plugin initialization disabled.
-  log   [10:40:58.995] [warning][savedobjects-service] Skipping Saved Object migrations on startup. Note: Individual documents will still be migrated when read or written.
-np bld    log   [10:41:00.496] [info][@osd/optimizer] initialized, 0 bundles cached
-np bld    log   [10:41:00.497] [warning][@osd/optimizer] only building [v7dark,v7light] themes, customize with the OSD_OPTIMIZER_THEMES environment variable
- watching for changes  (2134 files)
-np bld    log   [10:41:01.204] [info][@osd/optimizer] starting worker [13 bundles]
-np bld    log   [10:41:01.205] [info][@osd/optimizer] starting worker [13 bundles]
-np bld    log   [10:41:01.206] [info][@osd/optimizer] starting worker [12 bundles]
-np bld    log   [10:41:01.209] [info][@osd/optimizer] starting worker [13 bundles]
-server    log   [10:41:04.873] [info][plugins-service] Plugin "dataSourceManagement" has been disabled since the following direct or transitive dependencies are missing or disabled: [dataSource]
-server    log   [10:41:04.880] [info][plugins-service] Plugin "dataSource" is disabled.
-server    log   [10:41:04.881] [info][plugins-service] Plugin "visTypeXy" is disabled.
-server    log   [10:41:05.115] [info][plugins-system] Setting up [39] plugins: [usageCollection,opensearchDashboardsUsageCollection,opensearchDashboardsLegacy,mapsLegacy,share,opensearchUiShared,legacyExport,embeddable,expressions,data,home,console,apmOss,management,indexPatternManagement,advancedSettings,savedObjects,dashboard,visualizations,visTypeTimeline,timeline,visTypeTable,visTypeVega,visTypeMarkdown,visBuilder,tileMap,regionMap,inputControlVis,visualize,customPlugin,charts,visTypeVislib,visTypeTagcloud,visTypeTimeseries,visTypeMetric,discover,savedObjectsManagement,securityDashboards,bfetch]
-server    log   [10:41:08.972] [info][savedobjects-service] Waiting until all OpenSearch nodes are compatible with OpenSearch Dashboards before starting saved objects migrations...
-server    log   [10:41:09.058] [info][savedobjects-service] Starting saved objects migrations
-server    log   [10:41:09.112] [info][savedobjects-service] Creating index .kibana_1.
-server    log   [10:41:09.362] [info][savedobjects-service] Pointing alias .kibana to .kibana_1.
-server    log   [10:41:09.454] [info][savedobjects-service] Finished in 350ms.
-server    log   [10:41:09.483] [info][plugins-system] Starting [39] plugins: [usageCollection,opensearchDashboardsUsageCollection,opensearchDashboardsLegacy,mapsLegacy,share,opensearchUiShared,legacyExport,embeddable,expressions,data,home,console,apmOss,management,indexPatternManagement,advancedSettings,savedObjects,dashboard,visualizations,visTypeTimeline,timeline,visTypeTable,visTypeVega,visTypeMarkdown,visBuilder,tileMap,regionMap,inputControlVis,visualize,customPlugin,charts,visTypeVislib,visTypeTagcloud,visTypeTimeseries,visTypeMetric,discover,savedObjectsManagement,securityDashboards,bfetch]
-server    log   [10:41:11.325] [info][listening] Server running at http://0.0.0.0:5601
-server    log   [10:41:11.495] [info][server][OpenSearchDashboards][http] http server running at http://0.0.0.0:5601
-np bld    log   [10:42:10.955] [success][@osd/optimizer] 51 bundles compiled successfully after 70.9 sec, watching for changes
-```
-
-The server is ready when you see the following log:
-
-```log
-server    log   [12:40:34.503] [info][server][OpenSearchDashboards][http] http server running at http://0.0.0.0:5601
-```
-
-The first time the application is started, the code has to be optimized. This can take
-some minutes. When completed, you will see a log as this one:
-
-```log
-np bld    log   [10:42:10.955] [success][@osd/optimizer] 51 bundles compiled successfully after 70.9 sec, watching for changes
-```
-
-To stop the server, use **CTRL+C** in the console where the process is running.
-
-#### Access the OpenSearch Dashboards web UI
-
-You can access to the server through your browser in http://0.0.0.0:5601.
-5601 is the default port in the environment configuration.
-
-Credentials to login in the UI are:
-
-```js
-username: admin;
-password: Wazuh-1234;
-```
-
-If you see the following message, then the most likely cause is that the code optimization
-process has not finished yet. Wait a few minutes a try again.
-
-![error_optimizing_frontend_files](./docs/default/error_optimizing_frontend_files.png)
-
-#### Access the Custom Plugin web UI
-
-1. With the OpenSearch Dashboards server running, access to the server through the browser.
-
-1. Open the menu:
-
-    ![open_plugin_menu](./docs/default/open_plugin_menu.png)
-
-1. Click on the custom plugin:
-
-    ![access_to_custom_plugin](./docs/default/access_to_custom_plugin.png)
-
-1. Custom plugin overview:
-
-    ![custom_plugin_overview](./docs/default/custom_plugin_overview.png)
-
-## Developer notes
-
-As the server is running in development mode, the hot-reload features are enabled:
-
--   on server side changes, the server will be restarted.
--   on front-end side changes, the modified code will be optimized again and the static
-    files updated. When this happens, you'll these logs in the console:
-    > np bld log [10:47:08.306] [success][@osd/optimizer] 1 bundles compiled successfully after 0.1 sec, watching for changes
-
-### Browser's cache
-
-By default, the browser will cache the frontend files of the app. It is recommended to
-**disable the cache** while you are developing.
-
-You can do this through a checkbox in the browser development tools.
-
-> ⚠️ This only works if the browser development tools are opened. So you need to keep them opened while you want
-> to see the changes done in the frontend.
-
--   Google Chrome
-
-    ![disable_cache_google_chrome_dev_tools](./docs/default/disable_cache_google_chrome_dev_tools.png)
-
--   Firefox
-
-    ![disable_cache_firefox_dev_tools](./docs/default/disable_cache_firefox_dev_tools.png)
-
-### Plugin's dependencies
-
-The plugins can, **and does**, access some dependencies of the OpenSearch Dashboards.
-
-If you need a new dependency, ensure this is not included in the OpenSearch Dashboards.
-Check the `package.json` of the OpenSearch Dashboards. Inside the development container,
-check the `/home/node/kbn/package.json` file.
-
-In case you need to install a new dependency for the plugin, follow these steps:
-
-1. Start and access the **osd** container. Do not start the server. Stop the process if
-   it is already running.
-1. Go to the plugin directory inside the container: `/home/node/kbn/plugins/custom_plugin`.
-1. Install the dependency using `yarn` (default) or `npm`. Both are available.
-
-    - Using `yarn`:
-
-    ```shell
-    yarn add <dependency_name>
-    ```
-
-    - Using `npm`:
-
-    ```shell
-    npm install <dependency_name>
-    ```
-
-### OpenSearch indexer client examples
-
-These are a few snippets that serve as an example of how to make queries to OpenSearch indexer from the server side of the plugin:
+First-time startup triggers code optimization (2-5 minutes). Server is ready when you see:
 
 ```
-// Delete a document
-await context.core.opensearch.client.asCurrentUser.delete({
-    index: INDEX_PATTERN,
-    id: '1'
-});
+server    log   [XX:XX:XX.XXX] [info][server][OpenSearchDashboards][http] http server running at http://0.0.0.0:5601
 ```
 
+Optimization complete when you see:
 ```
-// Create a document
-await context.core.opensearch.client.asCurrentUser.create({
-    index: INDEX_PATTERN,
-    id: '1',
-    body: {
-        title: 'Test',
-        description: 'Test description',
-    }
-});
+np bld    log   [XX:XX:XX.XXX] [success][@osd/optimizer] 51 bundles compiled successfully after XX.X sec, watching for changes
 ```
 
+### Step 5: Access the Application
+
+1. Open browser: **http://localhost:5601**
+2. Login credentials:
+   - Username: `admin`
+   - Password: `Wazuh-1234`
+3. Click hamburger menu (top-left) and select **TO-DO Plugin**
+
+### Stop the Environment
+
+```bash
+# Stop containers (preserves data)
+docker compose stop
+
+# Stop and remove containers (clean slate)
+docker compose down
+
+# Stop and remove all data (including OpenSearch indices)
+docker compose down -v
 ```
-// Make a search
-const responseItems = await context.core.opensearch.client.asCurrentUser.search({
-    index: INDEX_PATTERN,
-    // body: {}
-});
+
+## Documentation
+
+Comprehensive documentation is available in the `docs/` directory:
+
+### Core Documentation
+
+- **[Architecture Guide](docs/architecture.md)**: Deep dive into the plugin architecture, data flow, design patterns, and technology stack
+- **[Features Documentation](docs/features.md)**: Detailed description of all features, user workflows, and usage examples
+- **[API Reference](docs/api.md)**: Complete REST API documentation with request/response examples and error codes
+
+### Specialized Documentation
+
+- **[Dashboard & UI Guide](docs/dashboards.md)**: Frontend components, visualizations, and user workflows from an end-user perspective
+- **[Testing Guide](docs/testing.md)**: How to run tests in Docker, debugging, troubleshooting, and CI/CD integration
+- **[Technical Challenges](docs/technical-challenges.md)**: Architecture decisions, trade-offs, and lessons learned during development
+- **[Roadmap](docs/roadmap.md)**: Future enhancements and strategic direction aligned with Wazuh security workflows
+
+### Additional Resources
+
+- **[CLAUDE.md](CLAUDE.md)**: Developer guidance for working with this project and Claude Code integration
+- **[PROJECT_RULES.md](PROJECT_RULES.md)**: Architecture rules and constraints that must be followed
+
+## Technology Stack
+
+### Backend
+
+- **OpenSearch Dashboards 2.16.0**: Plugin platform
+- **Node.js**: Server runtime
+- **TypeScript**: Type-safe JavaScript
+- **@osd/config-schema**: Input validation
+- **OpenSearch Client 2.16.0**: Database interaction
+
+### Frontend
+
+- **React 17+**: UI framework
+- **@elastic/eui**: Elastic UI component library
+- **TypeScript**: Type-safe JavaScript
+- **React Hooks**: State management and side effects
+
+### Data Layer
+
+- **OpenSearch 2.16.0**: Document storage and search engine
+- **Index**: `customplugin-todos`
+
+### Testing
+
+- **Jest**: Test runner
+- **React Testing Library**: Component testing
+- **Coverage**: 250+ passing tests across 6 suites with comprehensive analytics coverage
+
+## Project Structure
+
+```
+dev_environment/
+├── docker-compose.yml              # Container definitions
+├── config/
+│   └── opensearch_dashboards.yml   # OSD configuration
+├── src/                            # Plugin source code
+│   ├── opensearch_dashboards.json  # Plugin manifest
+│   ├── package.json                # Dependencies and scripts
+│   ├── common/                     # Shared types and DTOs
+│   │   ├── constants.ts            # Plugin constants
+│   │   └── todo/
+│   │       ├── index.ts            # Exports
+│   │       ├── todo.types.ts       # Domain entities
+│   │       └── todo.dtos.ts        # API contracts
+│   ├── server/                     # Backend (Node.js)
+│   │   ├── plugin.ts               # Plugin lifecycle
+│   │   ├── routes/                 # HTTP endpoints
+│   │   │   ├── index.ts
+│   │   │   └── todos.routes.ts     # TODO API routes
+│   │   ├── controllers/            # Request/response handling
+│   │   │   ├── index.ts
+│   │   │   └── todos.controller.ts
+│   │   ├── services/               # Business logic
+│   │   │   ├── index.ts
+│   │   │   ├── todos.service.ts
+│   │   │   └── todo_stats.service.ts
+│   │   ├── repositories/           # OpenSearch data access
+│   │   │   ├── index.ts
+│   │   │   ├── todos.repository.ts
+│   │   │   └── index_manager.ts
+│   │   ├── mappers/                # Data transformations
+│   │   │   ├── index.ts
+│   │   │   └── todos.mapper.ts
+│   │   ├── errors/                 # Error handling
+│   │   │   ├── index.ts
+│   │   │   ├── app_errors.ts
+│   │   │   └── http_error_mapper.ts
+│   │   └── __tests__/              # Backend tests (3 suites)
+│   │       ├── todos.service.test.ts
+│   │       ├── todo_stats.service.test.ts
+│   │       └── todos.mapper.test.ts
+│   ├── public/                     # Frontend (React)
+│   │   ├── plugin.ts               # Plugin registration
+│   │   ├── application.tsx         # App entry point
+│   │   ├── components/
+│   │   │   └── app.tsx             # Main app component
+│   │   └── features/todos/         # Feature-first organization
+│   │       ├── index.ts
+│   │       ├── api/
+│   │       │   └── todos.client.ts # HTTP client
+│   │       ├── hooks/              # React hooks (5 custom hooks)
+│   │       │   ├── use_todos.ts
+│   │       │   ├── use_create_todo.ts
+│   │       │   ├── use_update_todo.ts
+│   │       │   ├── use_delete_todo.ts
+│   │       │   └── use_todo_stats.ts
+│   │       ├── ui/                 # React components
+│   │       │   ├── TodosPage.tsx
+│   │       │   ├── TodosTable.tsx
+│   │       │   ├── TodosChart.tsx
+│   │       │   ├── TodoForm.tsx
+│   │       │   └── TodoFilters.tsx
+│   │       └── __tests__/          # Frontend tests (3 suites)
+│   │           ├── setup.ts
+│   │           ├── TodosTable.test.tsx
+│   │           ├── TodosChart.test.tsx
+│   │           └── TodoForm.test.tsx
+├── docs/                           # Documentation
+│   ├── architecture.md             # Architecture guide (1,026 lines)
+│   ├── features.md                 # Features documentation (764 lines)
+│   ├── api.md                      # REST API reference (716 lines)
+│   ├── dashboards.md               # UI components guide (44KB)
+│   ├── testing.md                  # Testing guide (1,016 lines)
+│   ├── technical-challenges.md     # ADRs and lessons learned
+│   └── roadmap.md                  # Future enhancements (38KB)
+├── CLAUDE.md                       # Claude Code guidance
+├── PROJECT_RULES.md                # Architecture rules
+└── README.md                       # This file
 ```
 
-Keep in mind you may need to check if the index pattern exists before using it
+## Running Tests
+
+Tests must be run inside the Docker container:
+
+```bash
+# Attach to container
+docker exec -it dev_environment-osd-1 bash
+
+# Navigate to plugin directory
+cd /home/node/kbn/plugins/custom_plugin
+
+# Run all tests
+yarn test
+
+# Run with coverage
+yarn test --coverage
+
+# Run specific test suite
+yarn test server/__tests__/todos.service.test.ts
+
+# Watch mode for development
+yarn test --watch
 ```
-const existsIndex = await context.core.opensearch.client.asCurrentUser.indices.exists({
-    index: INDEX_PATTERN
-});
 
-if (!existsIndex.body) {
-    await context.core.opensearch.client.asCurrentUser.indices.create({
-    index: INDEX_PATTERN,
-    });
-}
+Expected output:
 ```
-More info on [API Docs](https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/api-reference.html)
+Test Suites: 6 passed, 6 total
+Tests:       250 passed, 250 total
+Snapshots:   0 total
+Time:        35.678 s
+```
 
-## References:
+For comprehensive testing documentation including troubleshooting, debugging, and CI/CD integration, see **[Testing Guide](docs/testing.md)**.
 
--   [Docker Desktop][docker-desktop]
--   [Developing inside a Container][dev-containers]
+## Development Workflow
 
-<!-- Links -->
+### Hot Reload
 
-[docker-desktop]: https://www.docker.com/products/docker-desktop
-[docker-engine]: https://docs.docker.com/engine
-[docker-compose]: https://docs.docker.com/compose/install/other
-[docker-volumes]: https://docs.docker.com/storage/volumes
-[dev-containers]: https://code.visualstudio.com/docs/devcontainers/containers
-[attach-container]: https://code.visualstudio.com/docs/devcontainers/attach-container
-[vm-max-count]: https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
+Development mode enables automatic reloading:
+
+- **Server changes** (`src/server/**`): Server automatically restarts
+- **Frontend changes** (`src/public/**`): Code re-optimized, browser updates
+
+### Disable Browser Cache
+
+While developing, disable browser cache in DevTools (Network tab) to ensure you see the latest changes.
+
+### Installing Dependencies
+
+Check if dependency exists in OpenSearch Dashboards core first:
+
+```bash
+# Inside the container
+cat /home/node/kbn/package.json | grep <dependency_name>
+```
+
+If not found, install in plugin directory:
+
+```bash
+cd /home/node/kbn/plugins/custom_plugin
+yarn add <dependency_name>
+```
+
+**Important**: Stop the OpenSearch Dashboards server before installing dependencies.
+
+### Building the Plugin
+
+Create a distributable plugin package:
+
+```bash
+# Inside the container
+cd /home/node/kbn/plugins/custom_plugin
+yarn build
+```
+
+This creates a `.zip` file in `build/` that can be installed in production.
+
+## Support
+
+For questions or issues:
+
+1. **Architecture**: Check the [Architecture Guide](docs/architecture.md) for system design and patterns
+2. **Features**: Review the [Features Documentation](docs/features.md) for functional capabilities
+3. **API**: Consult the [API Reference](docs/api.md) for endpoint specifications
+4. **UI**: See the [Dashboard Guide](docs/dashboards.md) for frontend components
+5. **Testing**: Read the [Testing Guide](docs/testing.md) for running tests and debugging
+6. **Development**: Review [CLAUDE.md](CLAUDE.md) for development workflow guidance
+7. **Contracts**: View [TypeScript Contracts](docs/contracts.md) for shared types documentation
+8. **Documentation**: See [Documentation Analytics](docs/documentation-analytics.md) for coverage metrics and generated documentation analysis
+
+## License
+
+This project is part of the Wazuh ecosystem. Please refer to the main Wazuh repository for licensing information.
+
+---
+
+**Plugin ID**: `customPlugin`
+**Display Name**: TO-DO Plugin
+**Version**: 1.0.0
+**OpenSearch Dashboards Version**: 2.16.0
+**OpenSearch Version**: 2.16.0

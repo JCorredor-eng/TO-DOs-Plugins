@@ -5,32 +5,27 @@ import {
   Plugin,
   Logger,
 } from '../../../src/core/server';
-
 import { CustomPluginPluginSetup, CustomPluginPluginStart } from './types';
 import { defineRoutes } from './routes';
-
 export class CustomPluginPlugin
-  implements Plugin<CustomPluginPluginSetup, CustomPluginPluginStart> {
+  implements Plugin<CustomPluginPluginSetup, CustomPluginPluginStart>
+{
   private readonly logger: Logger;
-
   constructor(initializerContext: PluginInitializerContext) {
     this.logger = initializerContext.logger.get();
   }
-
-  public setup(core: CoreSetup) {
-    this.logger.debug('custom_plugin: Setup');
+  public setup(core: CoreSetup): CustomPluginPluginSetup {
+    this.logger.debug('customPlugin: Setup');
     const router = core.http.createRouter();
-
-    // Register server side APIs
-    defineRoutes(router);
-
+    defineRoutes(router, this.logger);
+    this.logger.info('customPlugin: Routes registered');
     return {};
   }
-
-  public start(core: CoreStart) {
-    this.logger.debug('custom_plugin: Started');
+  public start(core: CoreStart): CustomPluginPluginStart {
+    this.logger.debug('customPlugin: Started');
     return {};
   }
-
-  public stop() {}
+  public stop(): void {
+    this.logger.debug('customPlugin: Stopped');
+  }
 }

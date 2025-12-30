@@ -27,6 +27,9 @@ export default {
     `${kbnDir}/src/dev/jest/setup/babel_polyfill.js`,
     `${kbnDir}/src/dev/jest/setup/enzyme.js`,
   ],
+  setupFilesAfterEnv: [
+    '<rootDir>/public/features/todos/__tests__/setup.ts',
+  ],
   collectCoverage: true,
   coverageDirectory: './target/test-coverage',
   coverageReporters: [

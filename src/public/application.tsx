@@ -1,9 +1,14 @@
+/**
+ * Pre-load translations before React mounts
+ * This ensures translations are available immediately when components render
+ */
+import './i18n-loader';
+
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { AppMountParameters, CoreStart } from '../../../src/core/public';
 import { AppPluginStartDependencies } from './types';
 import { CustomPluginApp } from './components/app';
-
 export const renderApp = (
   { notifications, http }: CoreStart,
   { navigation }: AppPluginStartDependencies,
@@ -18,6 +23,5 @@ export const renderApp = (
     />,
     element
   );
-
   return () => ReactDOM.unmountComponentAtNode(element);
 };

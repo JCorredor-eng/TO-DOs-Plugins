@@ -1,9 +1,8 @@
-version: "2.2"
-
 services:
   # OpenSearch instance
   os1:
     image: opensearchproject/opensearch:2.16.0
+    platform: linux/amd64
     hostname: os1
     environment:
       - cluster.name=os-dev-cluster
@@ -15,6 +14,8 @@ services:
       # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
       - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=Wazuh-1234"
+      # Uncomment on Apple Silicon for x86 emulation
+      - bootstrap.system_call_filter=false
     ulimits:
       memlock:
         soft: -1
@@ -40,6 +41,7 @@ services:
       os1:
         condition: service_healthy
     image: quay.io/wazuh/osd-dev:2.16.0
+    platform: linux/amd64
     hostname: osd
     user: "1000:1000"
     ports:
