@@ -1,7 +1,4 @@
-/**
- * Pre-load translations before React mounts
- * This ensures translations are available immediately when components render
- */
+
 import './i18n-loader';
 
 import React from 'react';

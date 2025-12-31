@@ -1,0 +1,10 @@
+{
+  "prefix": "customPlugin",
+  "paths": {
+    "customPlugin": "."
+  },
+  "translations": [
+    "translations/en-US.json",
+    "translations/es-ES.json"
+  ]
+}

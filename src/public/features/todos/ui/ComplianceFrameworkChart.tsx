@@ -29,7 +29,6 @@ const FrameworkRow: React.FC<{ framework: ComplianceCoverageStats }> = ({ framew
   return (
     <EuiPanel paddingSize="m" hasShadow={false} hasBorder>
       <EuiFlexGroup direction="column" gutterSize="s">
-        {/* Framework name and completion rate */}
         <EuiFlexItem>
           <EuiFlexGroup justifyContent="spaceBetween" alignItems="center">
             <EuiFlexItem grow={false}>
@@ -56,7 +55,6 @@ const FrameworkRow: React.FC<{ framework: ComplianceCoverageStats }> = ({ framew
           </EuiFlexGroup>
         </EuiFlexItem>
 
-        {/* Progress bar */}
         <EuiFlexItem>
           <EuiProgress
             valueText={i18n.translate('customPlugin.compliance.label.totalTasksCount', {
@@ -71,7 +69,6 @@ const FrameworkRow: React.FC<{ framework: ComplianceCoverageStats }> = ({ framew
           />
         </EuiFlexItem>
 
-        {/* Status breakdown */}
         <EuiFlexItem>
           <EuiFlexGroup gutterSize="m" alignItems="center" responsive={false}>
             <EuiFlexItem grow={false}>

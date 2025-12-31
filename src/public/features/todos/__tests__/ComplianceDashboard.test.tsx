@@ -18,11 +18,18 @@ jest.mock('../ui/OverdueTasksTable', () => ({
   ),
 }));
 jest.mock('../ui/PrioritySeverityHeatmap', () => ({
-  PrioritySeverityHeatmap: ({ priorityData, severityData }: any) => (
-    <div data-testid="priority-severity-heatmap">
-      PrioritySeverityHeatmap with {priorityData?.length || 0} priority items and {severityData?.length || 0} severity items
-    </div>
-  ),
+  PrioritySeverityHeatmap: ({ matrixData }: any) => {
+    const uniquePriorities = new Set(matrixData?.map((m: any) => m.priority) || []);
+    const uniqueSeverities = new Set();
+    matrixData?.forEach((m: any) => {
+      Object.keys(m.bySeverity || {}).forEach((s) => uniqueSeverities.add(s));
+    });
+    return (
+      <div data-testid="priority-severity-heatmap">
+        PrioritySeverityHeatmap with {uniquePriorities.size} priority items and {uniqueSeverities.size} severity items
+      </div>
+    );
+  },
 }));
 jest.mock('../ui/HighCriticalTasksChart', () => ({
   HighCriticalTasksChart: ({ data }: any) => (
@@ -97,6 +104,28 @@ describe('ComplianceDashboard', () => {
       { label: 'medium', count: 35, percentage: 35 },
       { label: 'high', count: 25, percentage: 25 },
       { label: 'critical', count: 10, percentage: 10 },
+    ],
+    prioritySeverityMatrix: [
+      {
+        priority: 'low',
+        total: 20,
+        bySeverity: { info: 5, low: 10, medium: 3, high: 2, critical: 0 },
+      },
+      {
+        priority: 'medium',
+        total: 40,
+        bySeverity: { info: 0, low: 10, medium: 20, high: 8, critical: 2 },
+      },
+      {
+        priority: 'high',
+        total: 30,
+        bySeverity: { info: 0, low: 5, medium: 10, high: 12, critical: 3 },
+      },
+      {
+        priority: 'critical',
+        total: 10,
+        bySeverity: { info: 0, low: 0, medium: 2, high: 3, critical: 5 },
+      },
     ],
   };
   beforeEach(() => {

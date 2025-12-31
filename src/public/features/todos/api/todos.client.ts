@@ -1,4 +1,4 @@
-import { HttpSetup } from '../../../../../src/core/public';
+import { HttpSetup } from "../../../../../src/core/public";
 import {
   CreateTodoRequest,
   CreateTodoResponse,
@@ -13,84 +13,90 @@ import {
   TodoAnalyticsQueryParams,
   TodoAnalyticsResponse,
   TodoSuggestionsResponse,
-} from '../../../common/todo/todo.dtos';
+} from "../../../common/todo/todo.dtos";
+import { buildQueryParams } from "./query-params.builder";
+
 export class TodosClient {
-  private readonly basePath = '/api/customPlugin/todos';
+  private readonly basePath = "/api/customPlugin/todos";
+
   constructor(private readonly http: HttpSetup) {}
+
   async list(params?: ListTodosQueryParams): Promise<ListTodosResponse> {
-    const queryParams: Record<string, string | number | boolean> = {};
-    if (params?.page) queryParams.page = params.page;
-    if (params?.pageSize) queryParams.pageSize = params.pageSize;
-    if (params?.searchText) queryParams.searchText = params.searchText;
-    if (params?.assignee) queryParams.assignee = params.assignee;
-    if (params?.sortField) queryParams.sortField = params.sortField;
-    if (params?.sortDirection) queryParams.sortDirection = params.sortDirection;
-    if (params?.status) {
-      queryParams.status = Array.isArray(params.status)
-        ? params.status.join(',')
-        : params.status;
-    }
-    if (params?.tags && params.tags.length > 0) {
-      queryParams.tags = params.tags.join(',');
-    }
-    if (params?.priority) {
-      queryParams.priority = Array.isArray(params.priority)
-        ? params.priority.join(',')
-        : params.priority;
-    }
-    if (params?.severity) {
-      queryParams.severity = Array.isArray(params.severity)
-        ? params.severity.join(',')
-        : params.severity;
-    }
-    if (params?.complianceFrameworks && params.complianceFrameworks.length > 0) {
-      queryParams.complianceFrameworks = params.complianceFrameworks.join(',');
-    }
-    if (params?.dueDateAfter) queryParams.dueDateAfter = params.dueDateAfter;
-    if (params?.dueDateBefore) queryParams.dueDateBefore = params.dueDateBefore;
-    if (params?.isOverdue !== undefined) {
-      queryParams.isOverdue = params.isOverdue.toString();
-    }
-    return this.http.get<ListTodosResponse>(this.basePath, {
-      query: queryParams,
+    const query = buildQueryParams((builder) => {
+      builder
+        .addIfDefined("page", params?.page)
+        .addIfDefined("pageSize", params?.pageSize)
+        .addIfDefined("searchText", params?.searchText)
+        .addIfDefined("assignee", params?.assignee)
+        .addIfDefined("sortField", params?.sortField)
+        .addIfDefined("sortDirection", params?.sortDirection)
+        .addArrayOrString("status", params?.status)
+        .addArray("tags", params?.tags)
+        .addArrayOrString("priority", params?.priority)
+        .addArrayOrString("severity", params?.severity)
+        .addArray("complianceFrameworks", params?.complianceFrameworks)
+        .addIfDefined("dueDateAfter", params?.dueDateAfter)
+        .addIfDefined("dueDateBefore", params?.dueDateBefore)
+        .addBoolean("isOverdue", params?.isOverdue);
     });
+
+    return this.http.get<ListTodosResponse>(this.basePath, { query });
   }
+
   async getById(id: string): Promise<GetTodoResponse> {
     return this.http.get<GetTodoResponse>(`${this.basePath}/${id}`);
   }
+
   async create(request: CreateTodoRequest): Promise<CreateTodoResponse> {
     return this.http.post<CreateTodoResponse>(this.basePath, {
       body: JSON.stringify(request),
     });
   }
-  async update(id: string, request: UpdateTodoRequest): Promise<UpdateTodoResponse> {
+
+  async update(
+    id: string,
+    request: UpdateTodoRequest
+  ): Promise<UpdateTodoResponse> {
     return this.http.patch<UpdateTodoResponse>(`${this.basePath}/${id}`, {
       body: JSON.stringify(request),
     });
   }
+
   async delete(id: string): Promise<DeleteTodoResponse> {
     return this.http.delete<DeleteTodoResponse>(`${this.basePath}/${id}`);
   }
+
   async getStats(params?: TodoStatsQueryParams): Promise<TodoStatsResponse> {
-    const queryParams: Record<string, string | number> = {};
-    if (params?.createdAfter) queryParams.createdAfter = params.createdAfter;
-    if (params?.createdBefore) queryParams.createdBefore = params.createdBefore;
-    if (params?.timeInterval) queryParams.timeInterval = params.timeInterval;
-    if (params?.topTagsLimit) queryParams.topTagsLimit = params.topTagsLimit;
+    const query = buildQueryParams((builder) => {
+      builder
+        .addIfDefined("createdAfter", params?.createdAfter)
+        .addIfDefined("createdBefore", params?.createdBefore)
+        .addIfDefined("timeInterval", params?.timeInterval)
+        .addIfDefined("topTagsLimit", params?.topTagsLimit);
+    });
+
     return this.http.get<TodoStatsResponse>(`${this.basePath}/_stats`, {
-      query: queryParams,
+      query,
     });
   }
-  async getAnalytics(params?: TodoAnalyticsQueryParams): Promise<TodoAnalyticsResponse> {
-    const queryParams: Record<string, string | boolean> = {};
-    if (params?.complianceFramework) queryParams.complianceFramework = params.complianceFramework;
-    if (params?.overdueOnly !== undefined) queryParams.overdueOnly = params.overdueOnly;
+
+  async getAnalytics(
+    params?: TodoAnalyticsQueryParams
+  ): Promise<TodoAnalyticsResponse> {
+    const query = buildQueryParams((builder) => {
+      builder
+        .addIfDefined("complianceFramework", params?.complianceFramework)
+        .addBoolean("overdueOnly", params?.overdueOnly);
+    });
+
     return this.http.get<TodoAnalyticsResponse>(`${this.basePath}/_analytics`, {
-      query: queryParams,
+      query,
     });
   }
 
   async getSuggestions(): Promise<TodoSuggestionsResponse> {
-    return this.http.get<TodoSuggestionsResponse>(`${this.basePath}/_suggestions`);
+    return this.http.get<TodoSuggestionsResponse>(
+      `${this.basePath}/_suggestions`
+    );
   }
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { IntlProvider } from 'react-intl';
 import { TodosPage } from '../ui/TodosPage';
 import { TodosClient } from '../api/todos.client';
 import { useTodos } from '../hooks/use_todos';
@@ -12,7 +13,6 @@ import { useTodoAnalytics } from '../hooks/use_todo_analytics';
 import { Todo, TodoStats, AnalyticsStats } from '../../../../common/todo/todo.types';
 import { PaginationMeta } from '../../../../common/todo/todo.dtos';
 
-// Mock all hooks
 jest.mock('../hooks/use_todos');
 jest.mock('../hooks/use_create_todo');
 jest.mock('../hooks/use_update_todo');
@@ -20,7 +20,6 @@ jest.mock('../hooks/use_delete_todo');
 jest.mock('../hooks/use_todo_stats');
 jest.mock('../hooks/use_todo_analytics');
 
-// Mock child components
 jest.mock('../ui/TodosTable', () => ({
   TodosTable: ({ todos, onEdit, onDelete }: any) => (
     <div data-testid="todos-table">
@@ -77,6 +76,14 @@ jest.mock('../ui/TodoForm', () => ({
 jest.mock('../../../components/language-selector', () => ({
   LanguageSelector: () => <div data-testid="language-selector">Language Selector</div>,
 }));
+
+const renderWithIntl = (component: React.ReactElement) => {
+  return render(
+    <IntlProvider locale="en" defaultLocale="en" messages={{}}>
+      {component}
+    </IntlProvider>
+  );
+};
 
 describe('TodosPage', () => {
   const mockHttp = {
@@ -188,7 +195,6 @@ describe('TodosPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Setup default hook mocks
     (useTodos as jest.Mock).mockReturnValue({
       todos: mockTodos,
       pagination: mockPagination,
@@ -228,65 +234,58 @@ describe('TodosPage', () => {
 
   describe('Page Structure', () => {
     it('should render the page title', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
       expect(screen.getByText('TODO Management')).toBeInTheDocument();
     });
 
     it('should render the page description', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
       expect(
         screen.getByText('Manage your TODO items, track progress, and view statistics.')
       ).toBeInTheDocument();
     });
 
     it('should render the Create TODO button in header', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
       const createButtons = screen.getAllByText('Create TODO');
       expect(createButtons.length).toBeGreaterThan(0);
     });
 
     it('should render the language selector', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
       expect(screen.getByTestId('language-selector')).toBeInTheDocument();
     });
   });
 
   describe('Tab Structure - 2 Tabs', () => {
     it('should render exactly 2 tabs', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
-      // Check for "Table View" tab
       expect(screen.getByText('Table View')).toBeInTheDocument();
 
-      // Check for "Analytics" tab (combined Statistics + Compliance)
       expect(screen.getByText('Analytics')).toBeInTheDocument();
     });
 
     it('should NOT render 3 separate tabs', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
-      // Verify old structure is gone
       const statisticsTexts = screen.queryAllByText('Statistics');
       const complianceTexts = screen.queryAllByText('Compliance Dashboard');
 
-      // These should not exist as separate tab labels
-      // (They might exist inside components, but not as top-level tabs)
       expect(statisticsTexts.length).toBe(0);
       expect(complianceTexts.length).toBe(0);
     });
 
     it('should default to Table View tab', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
-      // Table view components should be visible by default
       expect(screen.getByTestId('todo-filters')).toBeInTheDocument();
       expect(screen.getByTestId('todos-table')).toBeInTheDocument();
     });
 
     it('should show Table View content in first tab', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
-      // Verify table view is rendered
       expect(screen.getByTestId('todos-table')).toBeInTheDocument();
       expect(screen.getByTestId('todo-filters')).toBeInTheDocument();
       expect(screen.getByText('TodosTable with 2 items')).toBeInTheDocument();
@@ -295,12 +294,11 @@ describe('TodosPage', () => {
 
   describe('Analytics Tab - Combined Statistics and Compliance', () => {
     it('should switch to Analytics tab when clicked', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const analyticsTab = screen.getByText('Analytics');
       fireEvent.click(analyticsTab);
 
-      // Wait for tab content to render
       waitFor(() => {
         expect(screen.getByTestId('todos-chart')).toBeInTheDocument();
         expect(screen.getByTestId('compliance-dashboard')).toBeInTheDocument();
@@ -308,20 +306,20 @@ describe('TodosPage', () => {
     });
 
     it('should render both TodosStatsDashboard and ComplianceDashboard in Analytics tab', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const analyticsTab = screen.getByText('Analytics');
       fireEvent.click(analyticsTab);
 
       waitFor(() => {
-        // Both components should be visible in the Analytics tab
+
         expect(screen.getByTestId('todos-chart')).toBeInTheDocument();
         expect(screen.getByTestId('compliance-dashboard')).toBeInTheDocument();
       });
     });
 
     it('should pass stats data to TodosStatsDashboard', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const analyticsTab = screen.getByText('Analytics');
       fireEvent.click(analyticsTab);
@@ -332,7 +330,7 @@ describe('TodosPage', () => {
     });
 
     it('should pass analytics data to ComplianceDashboard', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const analyticsTab = screen.getByText('Analytics');
       fireEvent.click(analyticsTab);
@@ -343,16 +341,13 @@ describe('TodosPage', () => {
     });
 
     it('should hide Table View when Analytics tab is active', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
-      // Initially table should be visible
       expect(screen.getByTestId('todos-table')).toBeInTheDocument();
 
-      // Click Analytics tab
       const analyticsTab = screen.getByText('Analytics');
       fireEvent.click(analyticsTab);
 
-      // Table should not be visible anymore
       waitFor(() => {
         expect(screen.queryByTestId('todos-table')).not.toBeInTheDocument();
       });
@@ -361,7 +356,7 @@ describe('TodosPage', () => {
 
   describe('Data Fetching Hooks', () => {
     it('should call useTodos hook with correct parameters', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       expect(useTodos).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -375,7 +370,7 @@ describe('TodosPage', () => {
     });
 
     it('should call useTodoStats hook', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       expect(useTodoStats).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -385,7 +380,7 @@ describe('TodosPage', () => {
     });
 
     it('should call useTodoAnalytics hook', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       expect(useTodoAnalytics).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -395,7 +390,7 @@ describe('TodosPage', () => {
     });
 
     it('should call useCreateTodo hook with notifications', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       expect(useCreateTodo).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -407,7 +402,7 @@ describe('TodosPage', () => {
     });
 
     it('should call useUpdateTodo hook with notifications', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       expect(useUpdateTodo).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -419,7 +414,7 @@ describe('TodosPage', () => {
     });
 
     it('should call useDeleteTodo hook with notifications', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       expect(useDeleteTodo).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -441,9 +436,8 @@ describe('TodosPage', () => {
         refresh: mockRefresh,
       });
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
-      // Table should still render with loading state
       expect(screen.getByTestId('todos-table')).toBeInTheDocument();
     });
 
@@ -455,7 +449,7 @@ describe('TodosPage', () => {
         refresh: mockRefreshStats,
       });
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const analyticsTab = screen.getByText('Analytics');
       fireEvent.click(analyticsTab);
@@ -473,7 +467,7 @@ describe('TodosPage', () => {
         refresh: mockRefreshAnalytics,
       });
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const analyticsTab = screen.getByText('Analytics');
       fireEvent.click(analyticsTab);
@@ -494,7 +488,7 @@ describe('TodosPage', () => {
         refresh: mockRefresh,
       });
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       expect(screen.getByText('Error Loading TODOs')).toBeInTheDocument();
       expect(screen.getByText('Failed to fetch todos')).toBeInTheDocument();
@@ -509,7 +503,7 @@ describe('TodosPage', () => {
         refresh: mockRefresh,
       });
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       expect(screen.getByText('No TODOs Found')).toBeInTheDocument();
       expect(screen.getByText('Create your first TODO item to get started.')).toBeInTheDocument();
@@ -523,7 +517,7 @@ describe('TodosPage', () => {
         refresh: mockRefreshStats,
       });
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const analyticsTab = screen.getByText('Analytics');
       fireEvent.click(analyticsTab);
@@ -541,7 +535,7 @@ describe('TodosPage', () => {
         refresh: mockRefreshAnalytics,
       });
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const analyticsTab = screen.getByText('Analytics');
       fireEvent.click(analyticsTab);
@@ -554,7 +548,7 @@ describe('TodosPage', () => {
 
   describe('CRUD Operations', () => {
     it('should open create form when Create TODO button is clicked', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const createButton = screen.getAllByRole('button', { name: /create todo/i })[0];
       fireEvent.click(createButton);
@@ -564,7 +558,7 @@ describe('TodosPage', () => {
     });
 
     it('should open edit form when edit button in table is clicked', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const editButton = screen.getByText('Edit First TODO');
       fireEvent.click(editButton);
@@ -576,7 +570,7 @@ describe('TodosPage', () => {
     it('should call createTodo when form is submitted in create mode', async () => {
       mockCreateTodo.mockResolvedValue(undefined);
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const createButtons = screen.getAllByText('Create TODO');
       fireEvent.click(createButtons[0]);
@@ -595,7 +589,7 @@ describe('TodosPage', () => {
     it('should call updateTodo when form is submitted in edit mode', async () => {
       mockUpdateTodo.mockResolvedValue(undefined);
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const editButton = screen.getByText('Edit First TODO');
       fireEvent.click(editButton);
@@ -612,7 +606,7 @@ describe('TodosPage', () => {
     });
 
     it('should call deleteTodo when delete button is clicked', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const deleteButton = screen.getByText('Delete todo-1');
       fireEvent.click(deleteButton);
@@ -621,7 +615,7 @@ describe('TodosPage', () => {
     });
 
     it('should close form when close button is clicked', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const createButtons = screen.getAllByText('Create TODO');
       fireEvent.click(createButtons[0]);
@@ -637,7 +631,7 @@ describe('TodosPage', () => {
     it('should refresh todos and stats after successful create', async () => {
       const onSuccessCallback = jest.fn();
       mockCreateTodo.mockImplementation(async () => {
-        // Simulate successful creation
+
         onSuccessCallback();
       });
 
@@ -646,7 +640,7 @@ describe('TodosPage', () => {
         loading: false,
       });
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const createButton = screen.getAllByRole('button', { name: /create todo/i })[0];
       fireEvent.click(createButton);
@@ -662,7 +656,7 @@ describe('TodosPage', () => {
     it('should refresh todos and stats after successful update', async () => {
       const onSuccessCallback = jest.fn();
       mockUpdateTodo.mockImplementation(async () => {
-        // Simulate successful update
+
         onSuccessCallback();
       });
 
@@ -671,7 +665,7 @@ describe('TodosPage', () => {
         loading: false,
       });
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const editButton = screen.getByText('Edit First TODO');
       fireEvent.click(editButton);
@@ -685,45 +679,45 @@ describe('TodosPage', () => {
     });
 
     it('should refresh todos and stats after successful delete', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const deleteButton = screen.getByText('Delete todo-1');
       fireEvent.click(deleteButton);
 
-      // Delete is called immediately (no async waiting needed)
       expect(mockDeleteTodo).toHaveBeenCalledWith('todo-1');
     });
   });
 
   describe('Filters', () => {
     it('should render TodoFilters component', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       expect(screen.getByTestId('todo-filters')).toBeInTheDocument();
     });
 
     it('should handle filter changes', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const applyFilterButton = screen.getByText('Apply Filter');
       fireEvent.click(applyFilterButton);
 
-      // Verify that the filter state is updated (indirectly through hook call)
       expect(useTodos).toHaveBeenCalled();
     });
 
     it('should reset to page 1 when filters change', async () => {
-      const { rerender } = render(
+      const { rerender } = renderWithIntl(
         <TodosPage http={mockHttp} notifications={mockNotifications} />
       );
 
       const applyFilterButton = screen.getByText('Apply Filter');
       fireEvent.click(applyFilterButton);
 
-      // Force re-render to trigger effect
-      rerender(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      rerender(
+        <IntlProvider locale="en" defaultLocale="en" messages={{}}>
+          <TodosPage http={mockHttp} notifications={mockNotifications} />
+        </IntlProvider>
+      );
 
-      // Page should be reset to 1 when filters change
       await waitFor(() => {
         expect(useTodos).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -738,16 +732,15 @@ describe('TodosPage', () => {
 
   describe('Pagination', () => {
     it('should pass pagination data to TodosTable', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       expect(screen.getByTestId('todos-table')).toBeInTheDocument();
-      // Pagination is passed as prop to TodosTable
+
     });
 
     it('should handle page size changes', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
-      // Initial render with default page size
       expect(useTodos).toHaveBeenCalledWith(
         expect.objectContaining({
           initialParams: expect.objectContaining({
@@ -760,7 +753,7 @@ describe('TodosPage', () => {
 
   describe('Sorting', () => {
     it('should default to sorting by createdAt desc', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       expect(useTodos).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -783,7 +776,7 @@ describe('TodosPage', () => {
         refresh: mockRefresh,
       });
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       expect(screen.getByTestId('todos-table')).toBeInTheDocument();
     });
@@ -796,7 +789,7 @@ describe('TodosPage', () => {
         refresh: mockRefreshStats,
       });
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const analyticsTab = screen.getByText('Analytics');
       fireEvent.click(analyticsTab);
@@ -814,7 +807,7 @@ describe('TodosPage', () => {
         refresh: mockRefreshAnalytics,
       });
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const analyticsTab = screen.getByText('Analytics');
       fireEvent.click(analyticsTab);
@@ -833,18 +826,17 @@ describe('TodosPage', () => {
         refresh: mockRefresh,
       });
 
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       expect(screen.getByText('No TODOs Found')).toBeInTheDocument();
     });
 
     it('should handle multiple rapid tab switches', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
       const analyticsTab = screen.getByText('Analytics');
       const tableViewTab = screen.getByText('Table View');
 
-      // Rapid switching
       fireEvent.click(analyticsTab);
       fireEvent.click(tableViewTab);
       fireEvent.click(analyticsTab);
@@ -858,11 +850,10 @@ describe('TodosPage', () => {
 
   describe('Component Integration', () => {
     it('should render all major components in correct order', () => {
-      const { container } = render(
+      const { container } = renderWithIntl(
         <TodosPage http={mockHttp} notifications={mockNotifications} />
       );
 
-      // Page should have header, tabs, and content
       expect(screen.getByText('TODO Management')).toBeInTheDocument();
       expect(screen.getByText('Table View')).toBeInTheDocument();
       expect(screen.getByText('Analytics')).toBeInTheDocument();
@@ -870,26 +861,22 @@ describe('TodosPage', () => {
     });
 
     it('should maintain state across tab switches', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
-      // Open create form in Table View
       const createButtons = screen.getAllByText('Create TODO');
       fireEvent.click(createButtons[0]);
 
       expect(screen.getByTestId('todo-form')).toBeInTheDocument();
 
-      // Switch to Analytics tab
       const analyticsTab = screen.getByText('Analytics');
       fireEvent.click(analyticsTab);
 
-      // Form should still be open
       expect(screen.getByTestId('todo-form')).toBeInTheDocument();
     });
 
     it('should use the same TodosClient instance across hooks', () => {
-      render(<TodosPage http={mockHttp} notifications={mockNotifications} />);
+      renderWithIntl(<TodosPage http={mockHttp} notifications={mockNotifications} />);
 
-      // All hooks should receive a TodosClient instance
       expect(useTodos).toHaveBeenCalledWith(
         expect.objectContaining({
           client: expect.any(TodosClient),

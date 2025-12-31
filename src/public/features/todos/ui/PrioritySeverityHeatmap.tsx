@@ -25,12 +25,12 @@ interface PrioritySeverityHeatmapProps {
 }
 
 const getHeatmapColor = (percentage: number): string => {
-  if (percentage === 0) return '#F5F7FA'; // Empty
-  if (percentage < 10) return '#D3DAE6'; // Very light
-  if (percentage < 20) return '#98A2B3'; // Light
-  if (percentage < 30) return '#69707D'; // Medium
-  if (percentage < 50) return '#343741'; // Dark
-  return '#1A1C21'; // Very dark
+  if (percentage === 0) return '#F5F7FA';
+  if (percentage < 10) return '#D3DAE6';
+  if (percentage < 20) return '#98A2B3';
+  if (percentage < 30) return '#69707D';
+  if (percentage < 50) return '#343741';
+  return '#1A1C21';
 };
 
 const getTextColor = (percentage: number): string => {
@@ -173,7 +173,6 @@ export const PrioritySeverityHeatmap: React.FC<PrioritySeverityHeatmapProps> = (
       </div>
 
       <EuiSpacer size="m" />
-      {/* Legend */}
       <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
         <EuiFlexItem grow={false}>
           <EuiText size="xs" color="subdued">

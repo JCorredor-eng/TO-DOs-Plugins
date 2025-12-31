@@ -24,7 +24,7 @@ describe('TodoAnalyticsService', () => {
           {
             key: 'PCI-DSS',
             doc_count: 30,
-            status_breakdown: {
+            by_status: {
               buckets: [
                 { key: 'planned', doc_count: 10 },
                 { key: 'done', doc_count: 15 },
@@ -35,7 +35,7 @@ describe('TodoAnalyticsService', () => {
           {
             key: 'ISO-27001',
             doc_count: 25,
-            status_breakdown: {
+            by_status: {
               buckets: [
                 { key: 'planned', doc_count: 15 },
                 { key: 'done', doc_count: 8 },
@@ -80,6 +80,52 @@ describe('TodoAnalyticsService', () => {
           { key: 'medium', doc_count: 35 },
           { key: 'high', doc_count: 25 },
           { key: 'critical', doc_count: 10 },
+        ],
+      },
+      priority_severity_matrix: {
+        buckets: [
+          {
+            key: 'low',
+            doc_count: 20,
+            by_severity: {
+              buckets: [
+                { key: 'info', doc_count: 5 },
+                { key: 'low', doc_count: 15 },
+              ],
+            },
+          },
+          {
+            key: 'medium',
+            doc_count: 40,
+            by_severity: {
+              buckets: [
+                { key: 'low', doc_count: 10 },
+                { key: 'medium', doc_count: 25 },
+                { key: 'high', doc_count: 5 },
+              ],
+            },
+          },
+          {
+            key: 'high',
+            doc_count: 30,
+            by_severity: {
+              buckets: [
+                { key: 'medium', doc_count: 10 },
+                { key: 'high', doc_count: 15 },
+                { key: 'critical', doc_count: 5 },
+              ],
+            },
+          },
+          {
+            key: 'critical',
+            doc_count: 10,
+            by_severity: {
+              buckets: [
+                { key: 'high', doc_count: 5 },
+                { key: 'critical', doc_count: 5 },
+              ],
+            },
+          },
         ],
       },
     },
@@ -186,6 +232,7 @@ describe('TodoAnalyticsService', () => {
           },
           priority_distribution: { buckets: [] },
           severity_distribution: { buckets: [] },
+          priority_severity_matrix: { buckets: [] },
         },
       };
       mockRepository.getAnalytics.mockResolvedValue(emptyResult);
@@ -193,8 +240,10 @@ describe('TodoAnalyticsService', () => {
       expect(result.totalTasks).toBe(0);
       expect(result.complianceCoverage).toEqual([]);
       expect(result.overdueTasks.total).toBe(0);
-      expect(result.priorityDistribution).toEqual([]);
-      expect(result.severityDistribution).toEqual([]);
+      expect(result.priorityDistribution).toHaveLength(4);
+      expect(result.priorityDistribution.every(d => d.count === 0)).toBe(true);
+      expect(result.severityDistribution).toHaveLength(5);
+      expect(result.severityDistribution.every(d => d.count === 0)).toBe(true);
     });
     it('should log debug information when fetching analytics', async () => {
       mockRepository.getAnalytics.mockResolvedValue(sampleAnalyticsResult);
@@ -368,7 +417,7 @@ describe('TodoAnalyticsService', () => {
               {
                 key: 'HIPAA',
                 doc_count: 50,
-                status_breakdown: {
+                by_status: {
                   buckets: [
                     { key: 'planned', doc_count: 20 },
                     { key: 'done', doc_count: 25 },
@@ -388,6 +437,17 @@ describe('TodoAnalyticsService', () => {
           },
           severity_distribution: {
             buckets: [{ key: 'low', doc_count: 50 }],
+          },
+          priority_severity_matrix: {
+            buckets: [
+              {
+                key: 'medium',
+                doc_count: 50,
+                by_severity: {
+                  buckets: [{ key: 'low', doc_count: 50 }],
+                },
+              },
+            ],
           },
         },
       };
@@ -412,6 +472,17 @@ describe('TodoAnalyticsService', () => {
           },
           severity_distribution: {
             buckets: [{ key: 'low', doc_count: 100 }],
+          },
+          priority_severity_matrix: {
+            buckets: [
+              {
+                key: 'medium',
+                doc_count: 100,
+                by_severity: {
+                  buckets: [{ key: 'low', doc_count: 100 }],
+                },
+              },
+            ],
           },
         },
       };
@@ -439,7 +510,7 @@ describe('TodoAnalyticsService', () => {
               {
                 key: 'SOC2',
                 doc_count: 50,
-                status_breakdown: {
+                by_status: {
                   buckets: [
                     { key: 'done', doc_count: 50 },
                   ],
@@ -454,6 +525,7 @@ describe('TodoAnalyticsService', () => {
           },
           priority_distribution: { buckets: [] },
           severity_distribution: { buckets: [] },
+          priority_severity_matrix: { buckets: [] },
         },
       };
       mockRepository.getAnalytics.mockResolvedValue(fullCompletionResult);
@@ -471,7 +543,7 @@ describe('TodoAnalyticsService', () => {
               {
                 key: 'GDPR',
                 doc_count: 50,
-                status_breakdown: {
+                by_status: {
                   buckets: [
                     { key: 'planned', doc_count: 40 },
                     { key: 'error', doc_count: 10 },
@@ -487,6 +559,7 @@ describe('TodoAnalyticsService', () => {
           },
           priority_distribution: { buckets: [] },
           severity_distribution: { buckets: [] },
+          priority_severity_matrix: { buckets: [] },
         },
       };
       mockRepository.getAnalytics.mockResolvedValue(noCompletionResult);

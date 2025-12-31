@@ -12,49 +12,11 @@ export default {
   modulePaths: [
     `${kbnDir}/node_modules`
   ],
-  collectCoverageFrom: [
-    '**/*.{js,jsx,ts,tsx}',
-    './!**/node_modules/**',
-  ],
-  moduleNameMapper: {
-    '^ui/(.*)': `${kbnDir}/src/ui/public/$1`,
-    // eslint-disable-next-line max-len
-    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': `${kbnDir}/src/dev/jest/mocks/file_mock.js`,
-    '\\.(css|less|scss)$': `${kbnDir}/src/dev/jest/mocks/style_mock.js`,
-    'axios': 'axios/dist/node/axios.cjs',
-  },
-  setupFiles: [
-    `${kbnDir}/src/dev/jest/setup/babel_polyfill.js`,
-    `${kbnDir}/src/dev/jest/setup/enzyme.js`,
-  ],
   setupFilesAfterEnv: [
-    '<rootDir>/public/features/todos/__tests__/setup.ts',
+    '<rootDir>/test/setup.ts',
   ],
-  collectCoverage: true,
-  coverageDirectory: './target/test-coverage',
-  coverageReporters: [
-    'html',
-    'text-summary',
-    'json-summary'
-  ],
-  globals: {
-    'ts-jest': {
-      skipBabel: true,
-    },
-  },
-  moduleFileExtensions: [
-    'js',
-    'json',
-    'ts',
-    'tsx',
-    'html'
-  ],
-  modulePathIgnorePatterns: [
-    '__fixtures__/',
-    'target/',
-  ],
-  testMatch: [
-    '**/*.test.{js,ts,tsx}',
+  collectCoverageFrom: [
+    '**node_modules*.test.{js,ts,tsx}',
   ],
   transform: {
     '^.+\\.js$': `${kbnDir}/src/dev/jest/babel_transform.js`,

@@ -245,8 +245,6 @@ export const TodosPage: React.FC<TodosPageProps> = ({ http, notifications }) => 
       content: (
         <>
           <EuiSpacer size="l" />
-
-          {/* Statistics Dashboard Section */}
           <div>
             <EuiTitle size="m">
               <h2>
@@ -271,8 +269,6 @@ export const TodosPage: React.FC<TodosPageProps> = ({ http, notifications }) => 
 
           <EuiSpacer size="xl" />
           <EuiSpacer size="xl" />
-
-          {/* Compliance Dashboard Section */}
           <div>
             <EuiTitle size="m">
               <h2>

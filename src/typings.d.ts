@@ -1,11 +1,5 @@
-/// <reference types="node" />
 
-// Type declarations for OpenSearch Dashboards core modules
-// These declarations provide IDE support for imports that work at runtime in Docker
-// The actual implementations are available when the plugin runs in OpenSearch Dashboards
 
-// External dependencies available from parent OpenSearch Dashboards installation
-// These modules are provided by OpenSearch Dashboards at runtime
 declare module 'react' {
   export type FC<P = {}> = (props: P) => ReactElement | null;
   export type ReactElement = any;
@@ -60,7 +54,7 @@ declare module 'react-dom' {
 }
 
 declare module '@elastic/eui' {
-  // Layout components
+
   export const EuiPage: any;
   export const EuiPageBody: any;
   export const EuiPageContent: any;
@@ -72,16 +66,13 @@ declare module '@elastic/eui' {
   export const EuiSpacer: any;
   export const EuiHorizontalRule: any;
 
-  // Typography
   export const EuiTitle: any;
   export const EuiText: any;
 
-  // Buttons
   export const EuiButton: any;
   export const EuiButtonEmpty: any;
   export const EuiButtonIcon: any;
 
-  // Form components
   export const EuiForm: any;
   export const EuiFormRow: any;
   export const EuiFieldText: any;
@@ -93,12 +84,10 @@ declare module '@elastic/eui' {
   export const EuiComboBox: any;
   export const EuiDatePicker: any;
 
-  // Table components
   export const EuiBasicTable: any;
   export type EuiBasicTableColumn<T> = any;
   export const EuiTablePagination: any;
 
-  // Overlays
   export const EuiModal: any;
   export const EuiModalHeader: any;
   export const EuiModalHeaderTitle: any;
@@ -112,7 +101,6 @@ declare module '@elastic/eui' {
   export const EuiFlyoutFooter: any;
   export const EuiPopover: any;
 
-  // Display components
   export const EuiBadge: any;
   export const EuiHealth: any;
   export const EuiStat: any;
@@ -122,13 +110,11 @@ declare module '@elastic/eui' {
   export const EuiHighlight: any;
   export const EuiDescriptionList: any;
 
-  // Feedback components
   export const EuiCallOut: any;
   export const EuiEmptyPrompt: any;
   export const EuiLoadingSpinner: any;
   export const EuiLoadingChart: any;
 
-  // Navigation
   export const EuiTabs: any;
   export const EuiTab: any;
   export const EuiTabbedContent: any;
@@ -136,21 +122,17 @@ declare module '@elastic/eui' {
   export const EuiLink: any;
   export const EuiHeaderLink: any;
 
-  // Selection components
   export const EuiSelectable: any;
   export type EuiSelectableOption = any;
   export const EuiSelectableMessage: any;
 
-  // Filter components
   export const EuiFilterGroup: any;
   export const EuiFilterButton: any;
 
-  // Misc
   export const EuiCard: any;
   export const EuiAccordion: any;
   export type EuiComboBoxOptionOption<T = any> = any;
 
-  // Hooks
   export const useEuiTheme: any;
 }
 
@@ -182,7 +164,6 @@ declare module '@osd/i18n/react' {
   export const injectI18n: any;
 }
 
-// Support all variations of relative paths to core modules
 declare module '**/src/core/public' {
   export * from 'opensearch-dashboards/public';
 }
@@ -215,7 +196,6 @@ declare module '../../../../../src/core/server' {
   export * from 'opensearch-dashboards/server';
 }
 
-// OpenSearch Dashboards core type definitions
 declare module 'opensearch-dashboards/public' {
   import { FC, ReactElement } from 'react';
 

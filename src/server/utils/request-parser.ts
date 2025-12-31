@@ -12,15 +12,9 @@ import {
 } from '../../common';
 import { Logger } from '../../../../src/core/server';
 
-/**
- * Utility class for parsing and validating HTTP request parameters
- */
 export class RequestParser {
   constructor(private readonly logger: Logger) {}
 
-  /**
-   * Parse list query parameters from HTTP request
-   */
   parseListQueryParams(query: Record<string, unknown>): ListTodosQueryParams {
     return {
       ...(query.page !== undefined && { page: this.parseNumber(query.page, 'page') }),
@@ -40,9 +34,6 @@ export class RequestParser {
     };
   }
 
-  /**
-   * Parse create todo request body
-   */
   parseCreateRequest(body: unknown): CreateTodoRequest {
     if (!body || typeof body !== 'object') {
       return { title: '' };
@@ -61,9 +52,6 @@ export class RequestParser {
     };
   }
 
-  /**
-   * Parse update todo request body
-   */
   parseUpdateRequest(body: unknown): UpdateTodoRequest {
     if (!body || typeof body !== 'object') {
       return {};
@@ -82,9 +70,6 @@ export class RequestParser {
     };
   }
 
-  /**
-   * Parse stats query parameters
-   */
   parseStatsQueryParams(query: Record<string, unknown>): TodoStatsQueryParams {
     return {
       ...(query.createdAfter !== undefined && typeof query.createdAfter === 'string' && { createdAfter: query.createdAfter }),
@@ -97,17 +82,12 @@ export class RequestParser {
     };
   }
 
-  /**
-   * Parse analytics query parameters
-   */
   parseAnalyticsQueryParams(query: Record<string, unknown>): TodoAnalyticsQueryParams {
     return {
       ...(query.complianceFramework !== undefined && typeof query.complianceFramework === 'string' && { complianceFramework: query.complianceFramework }),
       ...(query.overdueOnly !== undefined && { overdueOnly: this.parseBoolean(query.overdueOnly) }),
     };
   }
-
-  // ========== Private parsing helpers ==========
 
   private parseNumber(value: unknown, field: string): number {
     if (typeof value === 'number') {

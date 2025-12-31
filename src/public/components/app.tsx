@@ -13,20 +13,6 @@ interface CustomPluginAppDeps {
   navigation: NavigationPublicPluginStart;
 }
 
-/**
- * Main application component for the Custom Plugin.
- *
- * Wraps the application with:
- * - React Router for navigation
- * - Custom i18n provider for dynamic language switching
- * - OpenSearch Dashboards navigation UI
- *
- * @param props - Component dependencies
- * @param props.basename - Base URL path for the application
- * @param props.notifications - OpenSearch Dashboards notifications service
- * @param props.http - OpenSearch Dashboards HTTP service
- * @param props.navigation - OpenSearch Dashboards navigation plugin
- */
 export const CustomPluginApp = ({
   basename,
   notifications,
