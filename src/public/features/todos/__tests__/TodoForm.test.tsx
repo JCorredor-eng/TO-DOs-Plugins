@@ -6,16 +6,89 @@ import { TodoForm } from '../ui/TodoForm';
 import { Todo } from '../../../../common/todo/todo.types';
 import { TodosClient } from '../api/todos.client';
 import enTranslations from '../../../../translations/en-US.json';
+import { useTodoForm } from '../hooks/use_todo_form';
+import { useTodoSuggestions } from '../hooks/use_todo_suggestions';
 
 jest.mock('../api/todos.client');
+jest.mock('../hooks/use_todo_form');
+jest.mock('../hooks/use_todo_suggestions');
 
 describe('TodoForm', () => {
   const mockOnSubmit = jest.fn();
   const mockOnClose = jest.fn();
   const mockClient = new TodosClient({} as any);
+  const mockHandleSubmit = jest.fn();
+  const mockSetTitle = jest.fn();
+  const mockSetDescription = jest.fn();
+  const mockSetStatus = jest.fn();
+  const mockSetAssignee = jest.fn();
+  const mockSetSelectedTags = jest.fn();
+  const mockSetPriority = jest.fn();
+  const mockSetSeverity = jest.fn();
+  const mockSetDueDate = jest.fn();
+  const mockSetSelectedComplianceFrameworks = jest.fn();
+  const mockOnCreateTag = jest.fn();
+  const mockOnCreateComplianceFramework = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    (useTodoSuggestions as jest.Mock).mockReturnValue({
+      tags: [],
+      complianceFrameworks: [],
+    });
+
+    (useTodoForm as jest.Mock).mockReturnValue({
+      data: {
+        isEditMode: false,
+        suggestedTags: [],
+        suggestedFrameworks: [],
+        statusOptions: [
+          { value: 'planned', text: 'Planned' },
+          { value: 'done', text: 'Done' },
+          { value: 'error', text: 'Error' },
+        ],
+        priorityOptions: [
+          { value: 'low', text: 'Low' },
+          { value: 'medium', text: 'Medium' },
+          { value: 'high', text: 'High' },
+          { value: 'critical', text: 'Critical' },
+        ],
+        severityOptions: [
+          { value: 'info', text: 'Info' },
+          { value: 'low', text: 'Low' },
+          { value: 'medium', text: 'Medium' },
+          { value: 'high', text: 'High' },
+          { value: 'critical', text: 'Critical' },
+        ],
+      },
+      formState: {
+        title: '',
+        description: '',
+        status: 'planned',
+        assignee: '',
+        selectedTags: [],
+        priority: 'medium',
+        severity: 'low',
+        dueDate: '',
+        selectedComplianceFrameworks: [],
+        errors: {},
+      },
+      actions: {
+        setTitle: mockSetTitle,
+        setDescription: mockSetDescription,
+        setStatus: mockSetStatus,
+        setAssignee: mockSetAssignee,
+        setSelectedTags: mockSetSelectedTags,
+        setPriority: mockSetPriority,
+        setSeverity: mockSetSeverity,
+        setDueDate: mockSetDueDate,
+        setSelectedComplianceFrameworks: mockSetSelectedComplianceFrameworks,
+        onCreateTag: mockOnCreateTag,
+        onCreateComplianceFramework: mockOnCreateComplianceFramework,
+        handleSubmit: mockHandleSubmit,
+      },
+    });
   });
 
   const defaultProps = {
@@ -64,30 +137,27 @@ describe('TodoForm', () => {
       const statusSelect = screen.getByLabelText(/status/i) as HTMLSelectElement;
       expect(statusSelect.value).toBe('planned');
     });
-    it('should allow filling out all fields', async () => {
+    it('should call hook handlers when fields change', async () => {
       renderWithIntl(<TodoForm {...defaultProps} />);
       const titleInput = screen.getByLabelText(/title/i);
       const descriptionInput = screen.getByLabelText(/description/i);
       const assigneeInput = screen.getByLabelText(/assignee/i);
+
       fireEvent.change(titleInput, { target: { value: 'New Task' } });
       fireEvent.change(descriptionInput, { target: { value: 'Task description' } });
       fireEvent.change(assigneeInput, { target: { value: 'john.doe' } });
-      expect(titleInput).toHaveValue('New Task');
-      expect(descriptionInput).toHaveValue('Task description');
-      expect(assigneeInput).toHaveValue('john.doe');
+
+      expect(mockSetTitle).toHaveBeenCalledWith('New Task');
+      expect(mockSetDescription).toHaveBeenCalledWith('Task description');
+      expect(mockSetAssignee).toHaveBeenCalledWith('john.doe');
     });
-    it('should call onSubmit with create data when form is valid', async () => {
-      mockOnSubmit.mockResolvedValue(undefined);
+    it('should call handleSubmit when form is submitted', async () => {
+      mockHandleSubmit.mockResolvedValue(undefined);
       renderWithIntl(<TodoForm {...defaultProps} />);
-      const titleInput = screen.getByLabelText(/title/i);
-      fireEvent.change(titleInput, { target: { value: 'New Task' } });
       const submitButton = screen.getByRole('button', { name: /create todo/i });
       fireEvent.click(submitButton);
       await waitFor(() => {
-        expect(mockOnSubmit).toHaveBeenCalledWith({
-          title: 'New Task',
-          status: 'planned',
-        });
+        expect(mockHandleSubmit).toHaveBeenCalled();
       });
     });
     it('should include optional fields in submission when provided', async () => {
@@ -112,6 +182,58 @@ describe('TodoForm', () => {
   });
   describe('Edit Mode', () => {
     it('should render edit form with existing data', () => {
+      (useTodoForm as jest.Mock).mockReturnValueOnce({
+        data: {
+          isEditMode: true,
+          suggestedTags: [],
+          suggestedFrameworks: [],
+          statusOptions: [
+            { value: 'planned', text: 'Planned' },
+            { value: 'done', text: 'Done' },
+            { value: 'error', text: 'Error' },
+          ],
+          priorityOptions: [
+            { value: 'low', text: 'Low' },
+            { value: 'medium', text: 'Medium' },
+            { value: 'high', text: 'High' },
+            { value: 'critical', text: 'Critical' },
+          ],
+          severityOptions: [
+            { value: 'info', text: 'Info' },
+            { value: 'low', text: 'Low' },
+            { value: 'medium', text: 'Medium' },
+            { value: 'high', text: 'High' },
+            { value: 'critical', text: 'Critical' },
+          ],
+        },
+        formState: {
+          title: 'Test TODO',
+          description: 'Test description',
+          status: 'planned',
+          assignee: 'user1',
+          selectedTags: [{ label: 'tag1' }, { label: 'tag2' }],
+          priority: 'high',
+          severity: 'medium',
+          dueDate: '2025-12-31',
+          selectedComplianceFrameworks: [{ label: 'PCI-DSS' }, { label: 'ISO-27001' }],
+          errors: {},
+        },
+        actions: {
+          setTitle: mockSetTitle,
+          setDescription: mockSetDescription,
+          setStatus: mockSetStatus,
+          setAssignee: mockSetAssignee,
+          setSelectedTags: mockSetSelectedTags,
+          setPriority: mockSetPriority,
+          setSeverity: mockSetSeverity,
+          setDueDate: mockSetDueDate,
+          setSelectedComplianceFrameworks: mockSetSelectedComplianceFrameworks,
+          onCreateTag: mockOnCreateTag,
+          onCreateComplianceFramework: mockOnCreateComplianceFramework,
+          handleSubmit: mockHandleSubmit,
+        },
+      });
+
       renderWithIntl(<TodoForm {...defaultProps} todo={mockTodo} />);
       expect(screen.getByText('Edit TODO')).toBeInTheDocument();
       expect(screen.getByLabelText(/title/i)).toHaveValue('Test TODO');
@@ -171,13 +293,62 @@ describe('TodoForm', () => {
   });
   describe('Validation', () => {
     it('should show error when title is empty', async () => {
+      (useTodoForm as jest.Mock).mockReturnValueOnce({
+        data: {
+          isEditMode: false,
+          suggestedTags: [],
+          suggestedFrameworks: [],
+          statusOptions: [
+            { value: 'planned', text: 'Planned' },
+            { value: 'done', text: 'Done' },
+            { value: 'error', text: 'Error' },
+          ],
+          priorityOptions: [
+            { value: 'low', text: 'Low' },
+            { value: 'medium', text: 'Medium' },
+            { value: 'high', text: 'High' },
+            { value: 'critical', text: 'Critical' },
+          ],
+          severityOptions: [
+            { value: 'info', text: 'Info' },
+            { value: 'low', text: 'Low' },
+            { value: 'medium', text: 'Medium' },
+            { value: 'high', text: 'High' },
+            { value: 'critical', text: 'Critical' },
+          ],
+        },
+        formState: {
+          title: '',
+          description: '',
+          status: 'planned',
+          assignee: '',
+          selectedTags: [],
+          priority: 'medium',
+          severity: 'low',
+          dueDate: '',
+          selectedComplianceFrameworks: [],
+          errors: { title: 'Title is required' },
+        },
+        actions: {
+          setTitle: mockSetTitle,
+          setDescription: mockSetDescription,
+          setStatus: mockSetStatus,
+          setAssignee: mockSetAssignee,
+          setSelectedTags: mockSetSelectedTags,
+          setPriority: mockSetPriority,
+          setSeverity: mockSetSeverity,
+          setDueDate: mockSetDueDate,
+          setSelectedComplianceFrameworks: mockSetSelectedComplianceFrameworks,
+          onCreateTag: mockOnCreateTag,
+          onCreateComplianceFramework: mockOnCreateComplianceFramework,
+          handleSubmit: mockHandleSubmit,
+        },
+      });
+
       renderWithIntl(<TodoForm {...defaultProps} />);
-      const submitButton = screen.getByRole('button', { name: /create todo/i });
-      fireEvent.click(submitButton);
       await waitFor(() => {
         expect(screen.getByText('Title is required')).toBeInTheDocument();
       });
-      expect(mockOnSubmit).not.toHaveBeenCalled();
     });
     it('should show error when title is only whitespace', async () => {
       renderWithIntl(<TodoForm {...defaultProps} />);

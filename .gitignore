@@ -1,6 +1,7 @@
 # Frontend static code
 src/target
 src/node_modules
+src/coverage
 
 # Environment variables (local configuration)
 .env

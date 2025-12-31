@@ -40,6 +40,16 @@ describe('TodoStatsService', () => {
           { key: '2024-01-03', key_as_string: '2024-01-03', doc_count: 8 },
         ],
       },
+      top_assignees: {
+        buckets: [
+          { key: 'john.doe', doc_count: 35 },
+          { key: 'jane.smith', doc_count: 28 },
+          { key: 'bob.wilson', doc_count: 22 },
+        ],
+      },
+      unassigned: {
+        doc_count: 15,
+      },
     },
   };
   beforeEach(() => {
@@ -141,6 +151,8 @@ describe('TodoStatsService', () => {
           by_status: { buckets: [] },
           top_tags: { buckets: [] },
           completed_over_time: { buckets: [] },
+          top_assignees: { buckets: [] },
+          unassigned: { doc_count: 0 },
         },
       };
       mockRepository.getStats.mockResolvedValue(emptyResult);
@@ -149,6 +161,8 @@ describe('TodoStatsService', () => {
       expect(result.byStatus).toEqual({ planned: 0, done: 0, error: 0 });
       expect(result.topTags).toEqual([]);
       expect(result.completedOverTime).toEqual([]);
+      expect(result.topAssignees).toEqual([]);
+      expect(result.unassignedCount).toBe(0);
     });
   });
   describe('validation', () => {

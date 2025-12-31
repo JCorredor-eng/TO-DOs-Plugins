@@ -6,6 +6,7 @@ import {
   TodoStats,
   TagCount,
   TimeSeriesPoint,
+  AssigneeCount,
   CreateTodoRequest,
   UpdateTodoRequest,
   AnalyticsStats,
@@ -60,6 +61,12 @@ export interface OpenSearchStatsAggregations {
   };
   completed_over_time: {
     buckets: OpenSearchBucket[];
+  };
+  top_assignees: {
+    buckets: OpenSearchBucket[];
+  };
+  unassigned: {
+    doc_count: number;
   };
 }
 export class TodosMapper {
@@ -188,11 +195,18 @@ export class TodosMapper {
         count: bucket.doc_count,
       })
     );
+    const topAssignees: AssigneeCount[] = aggregations.top_assignees.buckets.map((bucket) => ({
+      assignee: bucket.key,
+      count: bucket.doc_count,
+    }));
+    const unassignedCount = aggregations.unassigned.doc_count;
     return {
       total,
       byStatus: byStatus as Record<'planned' | 'done' | 'error', number>,
       topTags,
       completedOverTime,
+      topAssignees,
+      unassignedCount,
     };
   }
   static mergeUpdate(existingTodo: Todo, updateDoc: Partial<TodoDocument>, id: string): Todo {

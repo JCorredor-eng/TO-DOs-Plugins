@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {
   EuiFieldSearch,
   EuiFlexGroup,
@@ -7,10 +7,7 @@ import {
   EuiFilterButton,
   EuiPopover,
   EuiSelectable,
-  EuiSelectableOption,
-  EuiSpacer,
   EuiFieldText,
-  EuiFormRow,
   EuiSwitch,
 } from '@elastic/eui';
 import { FormattedMessage } from '@osd/i18n/react';
@@ -19,12 +16,20 @@ import {
   TodoStatus,
   TodoPriority,
   TodoSeverity,
-  TODO_STATUS_LABELS,
-  TODO_PRIORITY_VALUES,
-  TODO_PRIORITY_LABELS,
-  TODO_SEVERITY_VALUES,
-  TODO_SEVERITY_LABELS,
 } from '../../../../common/todo/todo.types';
+import { useTodoFilters } from '../hooks/use_todo_filters';
+
+export interface DateRangeFilters {
+  createdAfter?: string;
+  createdBefore?: string;
+  updatedAfter?: string;
+  updatedBefore?: string;
+  completedAfter?: string;
+  completedBefore?: string;
+  dueDateAfter?: string;
+  dueDateBefore?: string;
+}
+
 interface TodoFiltersProps {
   searchText?: string;
   selectedStatuses?: TodoStatus[];
@@ -32,6 +37,7 @@ interface TodoFiltersProps {
   selectedPriorities?: TodoPriority[];
   selectedSeverities?: TodoSeverity[];
   showOverdueOnly?: boolean;
+  dateFilters?: DateRangeFilters;
   onFiltersChange: (filters: {
     searchText?: string;
     status?: TodoStatus[];
@@ -39,8 +45,10 @@ interface TodoFiltersProps {
     priority?: TodoPriority[];
     severity?: TodoSeverity[];
     isOverdue?: boolean;
+    dateFilters?: DateRangeFilters;
   }) => void;
 }
+
 export const TodoFilters: React.FC<TodoFiltersProps> = ({
   searchText = '',
   selectedStatuses = [],
@@ -48,152 +56,46 @@ export const TodoFilters: React.FC<TodoFiltersProps> = ({
   selectedPriorities = [],
   selectedSeverities = [],
   showOverdueOnly = false,
+  dateFilters = {},
   onFiltersChange,
 }) => {
-  const [isStatusPopoverOpen, setIsStatusPopoverOpen] = useState(false);
-  const [isPriorityPopoverOpen, setIsPriorityPopoverOpen] = useState(false);
-  const [isSeverityPopoverOpen, setIsSeverityPopoverOpen] = useState(false);
-  const [localSearchText, setLocalSearchText] = useState(searchText);
-  const [localTags, setLocalTags] = useState(selectedTags.join(', '));
-  const [localShowOverdueOnly, setLocalShowOverdueOnly] = useState(showOverdueOnly);
-  const statusOptions: EuiSelectableOption[] = [
-    {
-      label: TODO_STATUS_LABELS.planned,
-      key: 'planned',
-      checked: selectedStatuses.includes('planned') ? 'on' : undefined,
-    },
-    {
-      label: TODO_STATUS_LABELS.done,
-      key: 'done',
-      checked: selectedStatuses.includes('done') ? 'on' : undefined,
-    },
-    {
-      label: TODO_STATUS_LABELS.error,
-      key: 'error',
-      checked: selectedStatuses.includes('error') ? 'on' : undefined,
-    },
-  ];
-  const priorityOptions: EuiSelectableOption[] = TODO_PRIORITY_VALUES.map((priority) => ({
-    label: TODO_PRIORITY_LABELS[priority],
-    key: priority,
-    checked: selectedPriorities.includes(priority) ? 'on' : undefined,
-  }));
-  const severityOptions: EuiSelectableOption[] = TODO_SEVERITY_VALUES.map((severity) => ({
-    label: TODO_SEVERITY_LABELS[severity],
-    key: severity,
-    checked: selectedSeverities.includes(severity) ? 'on' : undefined,
-  }));
-  const handleSearchChange = useCallback(
-    (value: string) => {
-      setLocalSearchText(value);
-      onFiltersChange({
-        searchText: value,
-        status: selectedStatuses,
-        tags: selectedTags,
-        priority: selectedPriorities,
-        severity: selectedSeverities,
-        isOverdue: localShowOverdueOnly,
-      });
-    },
-    [onFiltersChange, selectedStatuses, selectedTags, selectedPriorities, selectedSeverities, localShowOverdueOnly]
-  );
-  const handleStatusChange = useCallback(
-    (options: EuiSelectableOption[]) => {
-      const newStatuses = options
-        .filter((option) => option.checked === 'on')
-        .map((option) => option.key as TodoStatus);
-      onFiltersChange({
-        searchText: localSearchText,
-        status: newStatuses,
-        tags: selectedTags,
-        priority: selectedPriorities,
-        severity: selectedSeverities,
-        isOverdue: localShowOverdueOnly,
-      });
-    },
-    [onFiltersChange, localSearchText, selectedTags, selectedPriorities, selectedSeverities, localShowOverdueOnly]
-  );
-  const handlePriorityChange = useCallback(
-    (options: EuiSelectableOption[]) => {
-      const newPriorities = options
-        .filter((option) => option.checked === 'on')
-        .map((option) => option.key as TodoPriority);
-      onFiltersChange({
-        searchText: localSearchText,
-        status: selectedStatuses,
-        tags: selectedTags,
-        priority: newPriorities,
-        severity: selectedSeverities,
-        isOverdue: localShowOverdueOnly,
-      });
-    },
-    [onFiltersChange, localSearchText, selectedStatuses, selectedTags, selectedSeverities, localShowOverdueOnly]
-  );
-  const handleSeverityChange = useCallback(
-    (options: EuiSelectableOption[]) => {
-      const newSeverities = options
-        .filter((option) => option.checked === 'on')
-        .map((option) => option.key as TodoSeverity);
-      onFiltersChange({
-        searchText: localSearchText,
-        status: selectedStatuses,
-        tags: selectedTags,
-        priority: selectedPriorities,
-        severity: newSeverities,
-        isOverdue: localShowOverdueOnly,
-      });
-    },
-    [onFiltersChange, localSearchText, selectedStatuses, selectedTags, selectedPriorities, localShowOverdueOnly]
-  );
-  const handleTagsBlur = useCallback(() => {
-    const tags = localTags
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0);
-    onFiltersChange({
-      searchText: localSearchText,
-      status: selectedStatuses,
-      tags,
-      priority: selectedPriorities,
-      severity: selectedSeverities,
-      isOverdue: localShowOverdueOnly,
-    });
-  }, [localTags, onFiltersChange, localSearchText, selectedStatuses, selectedPriorities, selectedSeverities, localShowOverdueOnly]);
-  const handleOverdueToggle = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const checked = e.target.checked;
-      setLocalShowOverdueOnly(checked);
-      onFiltersChange({
-        searchText: localSearchText,
-        status: selectedStatuses,
-        tags: selectedTags,
-        priority: selectedPriorities,
-        severity: selectedSeverities,
-        isOverdue: checked,
-      });
-    },
-    [onFiltersChange, localSearchText, selectedStatuses, selectedTags, selectedPriorities, selectedSeverities]
-  );
-  const handleClearAll = useCallback(() => {
-    setLocalSearchText('');
-    setLocalTags('');
-    setLocalShowOverdueOnly(false);
-    onFiltersChange({
-      searchText: '',
-      status: [],
-      tags: [],
-      priority: [],
-      severity: [],
-      isOverdue: false,
-    });
-  }, [onFiltersChange]);
-  const activeFiltersCount =
-    (searchText ? 1 : 0) +
-    selectedStatuses.length +
-    selectedTags.length +
-    selectedPriorities.length +
-    selectedSeverities.length +
-    (showOverdueOnly ? 1 : 0);
+  const { data: hookData, uiState, actions } = useTodoFilters({
+    searchText,
+    selectedStatuses,
+    selectedTags,
+    selectedPriorities,
+    selectedSeverities,
+    showOverdueOnly,
+    dateFilters,
+    onFiltersChange,
+  });
+
+  const {
+    statusOptions,
+    priorityOptions,
+    severityOptions,
+    localSearchText,
+    localTags,
+    localShowOverdueOnly,
+    activeFiltersCount,
+  } = hookData;
+
+  const { isStatusPopoverOpen, isPriorityPopoverOpen, isSeverityPopoverOpen } = uiState;
+
+  const {
+    setIsStatusPopoverOpen,
+    setIsPriorityPopoverOpen,
+    setIsSeverityPopoverOpen,
+    setLocalTags,
+    handleSearchChange,
+    handleStatusChange,
+    handlePriorityChange,
+    handleSeverityChange,
+    handleTagsBlur,
+    handleOverdueToggle,
+    handleClearAll,
+  } = actions;
+
   const statusButton = (
     <EuiFilterButton
       iconType="arrowDown"
@@ -206,6 +108,7 @@ export const TodoFilters: React.FC<TodoFiltersProps> = ({
       <FormattedMessage id="customPlugin.filters.button.status" defaultMessage="Status" />
     </EuiFilterButton>
   );
+
   const priorityButton = (
     <EuiFilterButton
       iconType="arrowDown"
@@ -218,6 +121,7 @@ export const TodoFilters: React.FC<TodoFiltersProps> = ({
       <FormattedMessage id="customPlugin.filters.button.priority" defaultMessage="Priority" />
     </EuiFilterButton>
   );
+
   const severityButton = (
     <EuiFilterButton
       iconType="arrowDown"
@@ -230,6 +134,7 @@ export const TodoFilters: React.FC<TodoFiltersProps> = ({
       <FormattedMessage id="customPlugin.filters.button.severity" defaultMessage="Severity" />
     </EuiFilterButton>
   );
+
   return (
     <>
       <EuiFlexGroup gutterSize="s" alignItems="center" wrap>
@@ -244,6 +149,7 @@ export const TodoFilters: React.FC<TodoFiltersProps> = ({
             fullWidth
           />
         </EuiFlexItem>
+
         <EuiFlexItem grow={false}>
           <EuiFilterGroup>
             <EuiPopover
@@ -260,6 +166,7 @@ export const TodoFilters: React.FC<TodoFiltersProps> = ({
                 {(list) => <div style={{ width: 200 }}>{list}</div>}
               </EuiSelectable>
             </EuiPopover>
+
             <EuiPopover
               button={priorityButton}
               isOpen={isPriorityPopoverOpen}
@@ -274,6 +181,7 @@ export const TodoFilters: React.FC<TodoFiltersProps> = ({
                 {(list) => <div style={{ width: 200 }}>{list}</div>}
               </EuiSelectable>
             </EuiPopover>
+
             <EuiPopover
               button={severityButton}
               isOpen={isSeverityPopoverOpen}
@@ -290,6 +198,7 @@ export const TodoFilters: React.FC<TodoFiltersProps> = ({
             </EuiPopover>
           </EuiFilterGroup>
         </EuiFlexItem>
+
         <EuiFlexItem grow={false} style={{ minWidth: 180 }}>
           <EuiFieldText
             placeholder={i18n.translate('customPlugin.filters.placeholder.tags', {
@@ -300,6 +209,7 @@ export const TodoFilters: React.FC<TodoFiltersProps> = ({
             onBlur={handleTagsBlur}
           />
         </EuiFlexItem>
+
         <EuiFlexItem grow={false}>
           <EuiSwitch
             label={i18n.translate('customPlugin.filters.switch.overdueOnly', {
@@ -309,6 +219,7 @@ export const TodoFilters: React.FC<TodoFiltersProps> = ({
             onChange={handleOverdueToggle}
           />
         </EuiFlexItem>
+
         {activeFiltersCount > 0 && (
           <EuiFlexItem grow={false}>
             <EuiFilterButton onClick={handleClearAll} iconType="cross">
@@ -321,7 +232,7 @@ export const TodoFilters: React.FC<TodoFiltersProps> = ({
           </EuiFlexItem>
         )}
       </EuiFlexGroup>
-      <EuiSpacer size="m" />
+
     </>
   );
 };

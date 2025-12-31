@@ -75,7 +75,7 @@ export const TodosStatsDashboard: React.FC<TodosStatsDashboardProps> = ({ stats,
       </EuiPanel>
     );
   }
-  const { total, byStatus, topTags } = stats;
+  const { total, byStatus, topTags, topAssignees, unassignedCount } = stats;
   return (
     <>
       {}
@@ -247,6 +247,121 @@ export const TodosStatsDashboard: React.FC<TodosStatsDashboardProps> = ({ stats,
                   </EuiFlexItem>
                 );
               })}
+            </EuiFlexGroup>
+          </EuiPanel>
+        </>
+      )}
+
+      {}
+      {(topAssignees.length > 0 || unassignedCount > 0) && (
+        <>
+          <EuiSpacer size="l" />
+          <EuiPanel>
+            <EuiTitle size="s">
+              <h3>
+                <FormattedMessage
+                  id="customPlugin.chart.title.assigneeDistribution"
+                  defaultMessage="Assignee Distribution"
+                />
+              </h3>
+            </EuiTitle>
+            <EuiSpacer size="m" />
+            <EuiFlexGroup direction="column" gutterSize="s">
+              {}
+              {topAssignees.map((assigneeCount) => {
+                const percentage = total > 0 ? Math.round((assigneeCount.count / total) * 100) : 0;
+                return (
+                  <EuiFlexItem key={assigneeCount.assignee}>
+                    <EuiFlexGroup alignItems="center" gutterSize="m">
+                      <EuiFlexItem grow={false} style={{ minWidth: 150 }}>
+                        <EuiBadge color="primary">{assigneeCount.assignee}</EuiBadge>
+                      </EuiFlexItem>
+                      <EuiFlexItem>
+                        <div
+                          style={{
+                            width: '100%',
+                            height: 24,
+                            backgroundColor: '#e0e0e0',
+                            borderRadius: 4,
+                            overflow: 'hidden',
+                            position: 'relative',
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${percentage}%`,
+                              height: '100%',
+                              backgroundColor: '#006BB4',
+                            }}
+                          />
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 8,
+                              lineHeight: '24px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              color: percentage > 50 ? '#fff' : '#000',
+                            }}
+                          >
+                            {assigneeCount.count} ({percentage}%)
+                          </div>
+                        </div>
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
+                  </EuiFlexItem>
+                );
+              })}
+
+              {}
+              {unassignedCount > 0 && (
+                <EuiFlexItem>
+                  <EuiFlexGroup alignItems="center" gutterSize="m">
+                    <EuiFlexItem grow={false} style={{ minWidth: 150 }}>
+                      <EuiBadge color="default">
+                        <FormattedMessage
+                          id="customPlugin.chart.label.unassigned"
+                          defaultMessage="Unassigned"
+                        />
+                      </EuiBadge>
+                    </EuiFlexItem>
+                    <EuiFlexItem>
+                      <div
+                        style={{
+                          width: '100%',
+                          height: 24,
+                          backgroundColor: '#e0e0e0',
+                          borderRadius: 4,
+                          overflow: 'hidden',
+                          position: 'relative',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${total > 0 ? Math.round((unassignedCount / total) * 100) : 0}%`,
+                            height: '100%',
+                            backgroundColor: '#98A2B3',
+                          }}
+                        />
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 8,
+                            lineHeight: '24px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: total > 0 && Math.round((unassignedCount / total) * 100) > 50 ? '#fff' : '#000',
+                          }}
+                        >
+                          {unassignedCount} ({total > 0 ? Math.round((unassignedCount / total) * 100) : 0}%)
+                        </div>
+                      </div>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                </EuiFlexItem>
+              )}
             </EuiFlexGroup>
           </EuiPanel>
         </>

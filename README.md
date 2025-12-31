@@ -20,7 +20,9 @@ This plugin provides a comprehensive task management system designed for OpenSea
 
 The plugin demonstrates best practices for OpenSearch Dashboards plugin development including:
 
-- **Layered Architecture**: Clean separation between Routes, Controllers, Services, and Repositories
+- **5-Layer Backend Architecture**: Strict separation between Routes → Controllers → Services → Repositories → Mappers
+- **Presentational Component Pattern**: Frontend components are pure presentation with zero business logic (PROJECT RULE #11)
+- **Custom Hooks Architecture**: 12 custom React hooks containing all business logic, state management, and API calls
 - **Type Safety**: Full TypeScript implementation with strict type checking
 - **Data Validation**: Input validation at all boundaries using `@osd/config-schema`
 - **DTO Pattern**: Well-defined API contracts between frontend and backend
@@ -36,7 +38,8 @@ The plugin demonstrates best practices for OpenSearch Dashboards plugin developm
 
 - **Full CRUD Operations**: Create, read, update, and delete TODO items with rich metadata
 - **Advanced Search**: Full-text search across titles and descriptions with fuzzy matching
-- **Multi-Filter Support**: Filter by status, tags, assignee, priority, severity, compliance frameworks, and date ranges
+- **Multi-Filter Support**: Filter by status, tags, assignee, priority, severity, compliance frameworks
+- **Date Range Filtering**: Prominent date range picker in top navigation bar (TopNavMenu) with quick select options and "Last 7 days" default
 - **Server-Side Pagination**: Efficient handling of large datasets with configurable page sizes (up to 100 items per page)
 - **Flexible Sorting**: Sort by created date, updated date, completed date, title, status, priority, severity, or due date
 - **Tag-Based Organization**: Categorize tasks with multiple tags (up to 20 per item)
@@ -179,16 +182,9 @@ Comprehensive documentation is available in the `docs/` directory:
 
 ### Core Documentation
 
-- **[Architecture Guide](docs/architecture.md)**: Deep dive into the plugin architecture, data flow, design patterns, and technology stack
-- **[Features Documentation](docs/features.md)**: Detailed description of all features, user workflows, and usage examples
-- **[API Reference](docs/api.md)**: Complete REST API documentation with request/response examples and error codes
-
-### Specialized Documentation
-
-- **[Dashboard & UI Guide](docs/dashboards.md)**: Frontend components, visualizations, and user workflows from an end-user perspective
-- **[Testing Guide](docs/testing.md)**: How to run tests in Docker, debugging, troubleshooting, and CI/CD integration
-- **[Technical Challenges](docs/technical-challenges.md)**: Architecture decisions, trade-offs, and lessons learned during development
-- **[Roadmap](docs/roadmap.md)**: Future enhancements and strategic direction aligned with Wazuh security workflows
+- **[User Guide](docs/user-guide.md)**: Complete user manual with step-by-step instructions, screenshots, and best practices for using the task management plugin
+- **[Architecture Guide](docs/architecture.md)**: Comprehensive system architecture including the new presentational component pattern (PROJECT RULE #11), 5-layer backend architecture, 12 custom hooks, data flow diagrams, and design patterns
+- **[Features Documentation](docs/features.md)**: Complete feature catalog with 50+ implemented features, user workflows, API endpoints, data models, and technical constraints
 
 ### Additional Resources
 
@@ -270,36 +266,47 @@ dev_environment/
 │   │   ├── plugin.ts               # Plugin registration
 │   │   ├── application.tsx         # App entry point
 │   │   ├── components/
-│   │   │   └── app.tsx             # Main app component
-│   │   └── features/todos/         # Feature-first organization
+│   │   │   ├── app.tsx                      # Main app component
+│   │   │   └── language-selector.tsx        # i18n language switcher
+│   │   └── features/todos/                  # Feature-first organization
 │   │       ├── index.ts
 │   │       ├── api/
-│   │       │   └── todos.client.ts # HTTP client
-│   │       ├── hooks/              # React hooks (5 custom hooks)
-│   │       │   ├── use_todos.ts
-│   │       │   ├── use_create_todo.ts
-│   │       │   ├── use_update_todo.ts
-│   │       │   ├── use_delete_todo.ts
-│   │       │   └── use_todo_stats.ts
-│   │       ├── ui/                 # React components
-│   │       │   ├── TodosPage.tsx
-│   │       │   ├── TodosTable.tsx
-│   │       │   ├── TodosChart.tsx
-│   │       │   ├── TodoForm.tsx
-│   │       │   └── TodoFilters.tsx
-│   │       └── __tests__/          # Frontend tests (3 suites)
+│   │       │   └── todos.client.ts          # HTTP client
+│   │       ├── hooks/                       # Custom React hooks (12 hooks)
+│   │       │   ├── use_todos_page.ts        # Page orchestrator
+│   │       │   ├── use_todos_table.ts       # Table delete modal logic
+│   │       │   ├── use_todo_filters.ts      # Filter state management
+│   │       │   ├── use_todo_form.ts         # Form state & validation
+│   │       │   ├── use_compliance_dashboard.ts  # Framework selection
+│   │       │   ├── use_todos.ts             # Fetch todos data
+│   │       │   ├── use_create_todo.ts       # Create operation
+│   │       │   ├── use_update_todo.ts       # Update operation
+│   │       │   ├── use_delete_todo.ts       # Delete operation
+│   │       │   ├── use_todo_stats.ts        # Statistics fetching
+│   │       │   ├── use_todo_analytics.ts    # Analytics fetching
+│   │       │   └── use_todo_suggestions.ts  # Autocomplete suggestions
+│   │       ├── ui/                          # Presentational components
+│   │       │   ├── TodosPage.tsx            # Main page layout
+│   │       │   ├── TodosTable.tsx           # TODO table
+│   │       │   ├── TodoFilters.tsx          # Advanced filters
+│   │       │   ├── TodoForm.tsx             # Create/Edit form
+│   │       │   ├── TodosStatsDashboard.tsx  # General statistics
+│   │       │   ├── ComplianceDashboard.tsx  # Compliance analytics
+│   │       │   ├── ComplianceFrameworkChart.tsx
+│   │       │   ├── PrioritySeverityHeatmap.tsx
+│   │       │   ├── HighCriticalTasksChart.tsx
+│   │       │   └── OverdueTasksTable.tsx
+│   │       └── __tests__/                   # Frontend tests (6 suites)
 │   │           ├── setup.ts
+│   │           ├── TodosPage.test.tsx
 │   │           ├── TodosTable.test.tsx
-│   │           ├── TodosChart.test.tsx
-│   │           └── TodoForm.test.tsx
+│   │           ├── TodoFilters.test.tsx
+│   │           ├── TodoForm.test.tsx
+│   │           ├── TodosStatsDashboard.test.tsx
+│   │           └── ComplianceDashboard.test.tsx
 ├── docs/                           # Documentation
-│   ├── architecture.md             # Architecture guide (1,026 lines)
-│   ├── features.md                 # Features documentation (764 lines)
-│   ├── api.md                      # REST API reference (716 lines)
-│   ├── dashboards.md               # UI components guide (44KB)
-│   ├── testing.md                  # Testing guide (1,016 lines)
-│   ├── technical-challenges.md     # ADRs and lessons learned
-│   └── roadmap.md                  # Future enhancements (38KB)
+│   ├── architecture.md             # Architecture guide (new)
+│   └── features.md                 # Features documentation (new)
 ├── CLAUDE.md                       # Claude Code guidance
 ├── PROJECT_RULES.md                # Architecture rules
 └── README.md                       # This file
@@ -386,14 +393,15 @@ This creates a `.zip` file in `build/` that can be installed in production.
 
 For questions or issues:
 
-1. **Architecture**: Check the [Architecture Guide](docs/architecture.md) for system design and patterns
-2. **Features**: Review the [Features Documentation](docs/features.md) for functional capabilities
-3. **API**: Consult the [API Reference](docs/api.md) for endpoint specifications
-4. **UI**: See the [Dashboard Guide](docs/dashboards.md) for frontend components
-5. **Testing**: Read the [Testing Guide](docs/testing.md) for running tests and debugging
-6. **Development**: Review [CLAUDE.md](CLAUDE.md) for development workflow guidance
-7. **Contracts**: View [TypeScript Contracts](docs/contracts.md) for shared types documentation
-8. **Documentation**: See [Documentation Analytics](docs/documentation-analytics.md) for coverage metrics and generated documentation analysis
+1. **User Guide**: Check the [User Guide](docs/user-guide.md) for step-by-step instructions on using the plugin
+2. **Architecture**: Check the [Architecture Guide](docs/architecture.md) for system design and patterns
+3. **Features**: Review the [Features Documentation](docs/features.md) for functional capabilities
+4. **API**: Consult the [API Reference](docs/api.md) for endpoint specifications
+5. **UI**: See the [Dashboard Guide](docs/dashboards.md) for frontend components
+6. **Testing**: Read the [Testing Guide](docs/testing.md) for running tests and debugging
+7. **Development**: Review [CLAUDE.md](CLAUDE.md) for development workflow guidance
+8. **Contracts**: View [TypeScript Contracts](docs/contracts.md) for shared types documentation
+9. **Documentation**: See [Documentation Analytics](docs/documentation-analytics.md) for coverage metrics and generated documentation analysis
 
 ## License
 

@@ -449,6 +449,133 @@ describe('TodosService', () => {
         })
       );
     });
+
+    describe('Date Range Filtering', () => {
+      it('should filter by dueDate range with both after and before', async () => {
+        mockRepository.search.mockResolvedValue({
+          todos: [sampleTodo],
+          total: 1,
+        });
+        await service.list(mockClient, {
+          dueDateAfter: '2024-01-01T00:00:00.000Z',
+          dueDateBefore: '2024-12-31T23:59:59.000Z',
+        });
+        expect(mockRepository.search).toHaveBeenCalledWith(
+          mockClient,
+          expect.objectContaining({
+            dueDateAfter: '2024-01-01T00:00:00.000Z',
+            dueDateBefore: '2024-12-31T23:59:59.000Z',
+          })
+        );
+      });
+
+      it('should filter by dueDate with only dueDateAfter', async () => {
+        mockRepository.search.mockResolvedValue({
+          todos: [sampleTodo],
+          total: 1,
+        });
+        await service.list(mockClient, {
+          dueDateAfter: '2024-01-01T00:00:00.000Z',
+        });
+        expect(mockRepository.search).toHaveBeenCalledWith(
+          mockClient,
+          expect.objectContaining({
+            dueDateAfter: '2024-01-01T00:00:00.000Z',
+            dueDateBefore: undefined,
+          })
+        );
+      });
+
+      it('should filter by dueDate with only dueDateBefore', async () => {
+        mockRepository.search.mockResolvedValue({
+          todos: [sampleTodo],
+          total: 1,
+        });
+        await service.list(mockClient, {
+          dueDateBefore: '2024-12-31T23:59:59.000Z',
+        });
+        expect(mockRepository.search).toHaveBeenCalledWith(
+          mockClient,
+          expect.objectContaining({
+            dueDateAfter: undefined,
+            dueDateBefore: '2024-12-31T23:59:59.000Z',
+          })
+        );
+      });
+
+      it('should combine date filters with other filters', async () => {
+        mockRepository.search.mockResolvedValue({
+          todos: [sampleTodo],
+          total: 1,
+        });
+        await service.list(mockClient, {
+          status: 'planned',
+          tags: ['urgent'],
+          searchText: 'important',
+          dueDateAfter: '2024-01-01T00:00:00.000Z',
+          dueDateBefore: '2024-12-31T23:59:59.000Z',
+        });
+        expect(mockRepository.search).toHaveBeenCalledWith(
+          mockClient,
+          expect.objectContaining({
+            status: 'planned',
+            tags: ['urgent'],
+            searchText: 'important',
+            dueDateAfter: '2024-01-01T00:00:00.000Z',
+            dueDateBefore: '2024-12-31T23:59:59.000Z',
+          })
+        );
+      });
+
+      it('should handle isOverdue filter', async () => {
+        mockRepository.search.mockResolvedValue({
+          todos: [sampleTodo],
+          total: 1,
+        });
+        await service.list(mockClient, {
+          isOverdue: true,
+        });
+        expect(mockRepository.search).toHaveBeenCalledWith(
+          mockClient,
+          expect.objectContaining({
+            isOverdue: true,
+          })
+        );
+      });
+
+      it('should combine isOverdue with other filters', async () => {
+        mockRepository.search.mockResolvedValue({
+          todos: [sampleTodo],
+          total: 1,
+        });
+        await service.list(mockClient, {
+          status: 'planned',
+          priority: 'high',
+          isOverdue: true,
+        });
+        expect(mockRepository.search).toHaveBeenCalledWith(
+          mockClient,
+          expect.objectContaining({
+            status: 'planned',
+            priority: 'high',
+            isOverdue: true,
+          })
+        );
+      });
+
+      it('should return empty results for date range with no matches', async () => {
+        mockRepository.search.mockResolvedValue({
+          todos: [],
+          total: 0,
+        });
+        const result = await service.list(mockClient, {
+          dueDateAfter: '2025-01-01T00:00:00.000Z',
+          dueDateBefore: '2025-01-02T00:00:00.000Z',
+        });
+        expect(result.todos).toHaveLength(0);
+        expect(result.pagination.totalItems).toBe(0);
+      });
+    });
   });
   describe('update', () => {
     it('should update TODO title', async () => {

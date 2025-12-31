@@ -58,6 +58,12 @@ export interface TodoSearchParams {
   complianceFrameworks?: readonly string[];
   dueDateAfter?: string;
   dueDateBefore?: string;
+  createdAfter?: string;
+  createdBefore?: string;
+  updatedAfter?: string;
+  updatedBefore?: string;
+  completedAfter?: string;
+  completedBefore?: string;
   isOverdue?: boolean;
   sortField?: TodoSortField;
   sortDirection?: SortDirection;
@@ -344,6 +350,36 @@ export class TodosRepository {
       }
       filter.push({ range: { due_date: range } });
     }
+    if (params.createdAfter || params.createdBefore) {
+      const range: Record<string, string> = {};
+      if (params.createdAfter) {
+        range.gte = params.createdAfter;
+      }
+      if (params.createdBefore) {
+        range.lte = params.createdBefore;
+      }
+      filter.push({ range: { created_at: range } });
+    }
+    if (params.updatedAfter || params.updatedBefore) {
+      const range: Record<string, string> = {};
+      if (params.updatedAfter) {
+        range.gte = params.updatedAfter;
+      }
+      if (params.updatedBefore) {
+        range.lte = params.updatedBefore;
+      }
+      filter.push({ range: { updated_at: range } });
+    }
+    if (params.completedAfter || params.completedBefore) {
+      const range: Record<string, string> = {};
+      if (params.completedAfter) {
+        range.gte = params.completedAfter;
+      }
+      if (params.completedBefore) {
+        range.lte = params.completedBefore;
+      }
+      filter.push({ range: { completed_at: range } });
+    }
     if (params.isOverdue) {
       filter.push({
         bool: {
@@ -429,6 +465,18 @@ export class TodosRepository {
           fixed_interval: intervalMapping[interval],
           format: 'yyyy-MM-dd',
           min_doc_count: 0,
+        },
+      },
+      top_assignees: {
+        terms: {
+          field: 'assignee',
+          size: 10,
+          order: { _count: 'desc' },
+        },
+      },
+      unassigned: {
+        missing: {
+          field: 'assignee',
         },
       },
     };

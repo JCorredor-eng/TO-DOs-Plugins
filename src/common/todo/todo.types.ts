@@ -82,11 +82,18 @@ export interface TodoSortOptions {
   readonly field: TodoSortField;
   readonly direction: SortDirection;
 }
+export interface AssigneeCount {
+  readonly assignee: string;
+  readonly count: number;
+}
+
 export interface TodoStats {
   readonly total: number;
   readonly byStatus: Record<TodoStatus, number>;
   readonly topTags: readonly TagCount[];
   readonly completedOverTime: readonly TimeSeriesPoint[];
+  readonly topAssignees: readonly AssigneeCount[];
+  readonly unassignedCount: number;
 }
 export interface TagCount {
   readonly tag: string;

@@ -28,6 +28,12 @@ export function registerTodosRoutes(router: IRouter, logger: Logger): void {
           complianceFrameworks: schema.maybe(schema.string()),
           dueDateAfter: schema.maybe(schema.string()),
           dueDateBefore: schema.maybe(schema.string()),
+          createdAfter: schema.maybe(schema.string()),
+          createdBefore: schema.maybe(schema.string()),
+          updatedAfter: schema.maybe(schema.string()),
+          updatedBefore: schema.maybe(schema.string()),
+          completedAfter: schema.maybe(schema.string()),
+          completedBefore: schema.maybe(schema.string()),
           isOverdue: schema.maybe(schema.string()),
           sortField: schema.maybe(
             schema.oneOf([

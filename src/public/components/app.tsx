@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
 import { CoreStart } from '../../../../src/core/public';
 import { NavigationPublicPluginStart } from '../../../../src/plugins/navigation/public';
@@ -19,18 +19,40 @@ export const CustomPluginApp = ({
   http,
   navigation,
 }: CustomPluginAppDeps) => {
+  const [dateRange, setDateRange] = useState({
+    from: 'now-7d',
+    to: 'now',
+  });
+
+  const handleQuerySubmit = ({ dateRange: newDateRange }: any) => {
+    if (newDateRange) {
+      setDateRange({
+        from: newDateRange.from,
+        to: newDateRange.to,
+      });
+    }
+  };
+
   return (
     <Router basename={basename}>
       <CustomI18nProvider>
         <>
           <navigation.ui.TopNavMenu
             appName={PLUGIN_ID}
-            showSearchBar={true}
+            showSearchBar={false}
+            showDatePicker={true}
+            dateRangeFrom={dateRange.from}
+            dateRangeTo={dateRange.to}
+            onQuerySubmit={handleQuerySubmit}
             useDefaultBehaviors={true}
           />
           <Switch>
             <Route path="/todos">
-              <TodosPage http={http} notifications={notifications} />
+              <TodosPage
+                http={http}
+                notifications={notifications}
+                dateRange={dateRange}
+              />
             </Route>
             <Route path="/">
               <Redirect to="/todos" />

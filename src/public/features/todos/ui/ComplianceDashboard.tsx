@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React from 'react';
 import {
   EuiFlexGroup,
   EuiFlexItem,
@@ -13,12 +13,13 @@ import {
   EuiText,
 } from '@elastic/eui';
 import { FormattedMessage } from '@osd/i18n/react';
-import { i18n } from '@osd/i18n';
 import { AnalyticsStats } from '../../../../common/todo/todo.types';
 import { ComplianceFrameworkChart } from './ComplianceFrameworkChart';
 import { OverdueTasksTable } from './OverdueTasksTable';
 import { PrioritySeverityHeatmap } from './PrioritySeverityHeatmap';
 import { HighCriticalTasksChart } from './HighCriticalTasksChart';
+import { useComplianceDashboard } from '../hooks/use_compliance_dashboard';
+
 interface ComplianceDashboardProps {
   readonly data: AnalyticsStats | null;
   readonly loading: boolean;
@@ -26,6 +27,7 @@ interface ComplianceDashboardProps {
   readonly onRefresh: () => void;
   readonly onFrameworkChange?: (framework: string | undefined) => void;
 }
+
 export const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
   data,
   loading,
@@ -33,35 +35,9 @@ export const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
   onRefresh,
   onFrameworkChange,
 }) => {
-  const [selectedFramework, setSelectedFramework] = useState<string>('');
-  const availableFrameworks = useMemo(() => {
-    if (!data) return [];
-    return data.complianceCoverage.map(f => f.framework).filter(Boolean);
-  }, [data]);
-  const frameworkOptions = useMemo(() => {
-    return [
-      {
-        value: '',
-        text: i18n.translate('customPlugin.compliance.label.allFrameworks', {
-          defaultMessage: 'All Frameworks',
-        }),
-      },
-      ...availableFrameworks.map(framework => ({
-        value: framework,
-        text: framework,
-      })),
-    ];
-  }, [availableFrameworks]);
-  const handleFrameworkChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const value = e.target.value;
-      setSelectedFramework(value);
-      if (onFrameworkChange) {
-        onFrameworkChange(value || undefined);
-      }
-    },
-    [onFrameworkChange]
-  );
+  const { data: hookData, actions } = useComplianceDashboard({ data, onFrameworkChange });
+  const { selectedFramework, frameworkOptions } = hookData;
+  const { handleFrameworkChange } = actions;
   if (loading) {
     return (
       <EuiFlexGroup justifyContent="center" alignItems="center" style={{ minHeight: '400px' }}>

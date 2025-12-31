@@ -1,20 +1,18 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {
   EuiBasicTable,
   EuiBasicTableColumn,
   EuiBadge,
-  EuiButtonIcon,
   EuiFlexGroup,
   EuiFlexItem,
   EuiText,
   EuiConfirmModal,
-  EuiSpacer,
-  CriteriaWithPagination,
 } from '@elastic/eui';
 import { FormattedMessage } from '@osd/i18n/react';
 import { i18n } from '@osd/i18n';
 import { Todo, TODO_STATUS_COLORS, TODO_STATUS_LABELS, TodoSortField } from '../../../../common/todo/todo.types';
 import { PaginationMeta } from '../../../../common/todo/todo.dtos';
+import { useTodosTable } from '../hooks/use_todos_table';
 
 const formatRelativeTime = (dateString: string): string => {
   const date = new Date(dateString);
@@ -48,6 +46,21 @@ const formatRelativeTime = (dateString: string): string => {
   });
 };
 
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+const isOverdue = (dueDateString: string): boolean => {
+  const dueDate = new Date(dueDateString);
+  const now = new Date();
+  return dueDate < now;
+};
+
 interface TodosTableProps {
   todos: Todo[];
   pagination: PaginationMeta | null;
@@ -69,14 +82,16 @@ export const TodosTable: React.FC<TodosTableProps> = ({
   onDelete,
   onTableChange,
 }) => {
-  const [todoToDelete, setTodoToDelete] = useState<Todo | null>(null);
+  const { data: hookData, actions } = useTodosTable({
+    pagination,
+    sortField,
+    sortDirection,
+    onDelete,
+    onTableChange,
+  });
 
-  const handleDelete = useCallback(() => {
-    if (todoToDelete) {
-      onDelete(todoToDelete.id);
-      setTodoToDelete(null);
-    }
-  }, [todoToDelete, onDelete]);
+  const { todoToDelete, paginationConfig, sortingConfig } = hookData;
+  const { handleDeleteClick, handleDeleteConfirm, handleDeleteCancel, handleTableChange } = actions;
 
   const columns: Array<EuiBasicTableColumn<Todo>> = [
     {
@@ -151,6 +166,42 @@ export const TodosTable: React.FC<TodosTableProps> = ({
       ),
     },
     {
+      field: 'completedAt',
+      name: i18n.translate('customPlugin.table.column.completed', { defaultMessage: 'Completed' }),
+      sortable: true,
+      width: '12%',
+      render: (completedAt: string | null) =>
+        completedAt ? (
+          <EuiText size="s">{formatDate(completedAt)}</EuiText>
+        ) : (
+          <EuiText size="s" color="subdued">
+            -
+          </EuiText>
+        ),
+    },
+    {
+      field: 'dueDate',
+      name: i18n.translate('customPlugin.table.column.dueDate', { defaultMessage: 'Due Date' }),
+      sortable: true,
+      width: '12%',
+      render: (dueDate: string | undefined, todo: Todo) => {
+        if (!dueDate) {
+          return (
+            <EuiText size="s" color="subdued">
+              -
+            </EuiText>
+          );
+        }
+        const overdue = todo.status !== 'done' && isOverdue(dueDate);
+        return (
+          <EuiText size="s" color={overdue ? 'danger' : 'default'}>
+            {formatDate(dueDate)}
+            {overdue && ' (overdue)'}
+          </EuiText>
+        );
+      },
+    },
+    {
       name: i18n.translate('customPlugin.table.column.actions', { defaultMessage: 'Actions' }),
       width: '100px',
       actions: [
@@ -171,39 +222,11 @@ export const TodosTable: React.FC<TodosTableProps> = ({
           icon: 'trash',
           type: 'icon',
           color: 'danger',
-          onClick: (todo: Todo) => setTodoToDelete(todo),
+          onClick: handleDeleteClick,
         },
       ],
     },
   ];
-
-  const handleTableChange = useCallback(
-    ({ page, sort }: CriteriaWithPagination<Todo>) => {
-      const pageIndex = page?.index ?? 0;
-      const pageSize = page?.size ?? 20;
-      const newSortField = sort?.field as TodoSortField | undefined;
-      const newSortDirection = sort?.direction;
-
-      onTableChange(pageIndex + 1, pageSize, newSortField, newSortDirection);
-    },
-    [onTableChange]
-  );
-
-  const paginationConfig = pagination
-    ? {
-        pageIndex: pagination.page - 1,
-        pageSize: pagination.pageSize,
-        totalItemCount: pagination.totalItems,
-        pageSizeOptions: [10, 20, 50, 100],
-      }
-    : undefined;
-
-  const sortingConfig = {
-    sort: {
-      field: sortField,
-      direction: sortDirection,
-    },
-  };
 
   return (
     <>
@@ -225,8 +248,8 @@ export const TodosTable: React.FC<TodosTableProps> = ({
               defaultMessage="Delete TODO"
             />
           }
-          onCancel={() => setTodoToDelete(null)}
-          onConfirm={handleDelete}
+          onCancel={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
           cancelButtonText={i18n.translate('customPlugin.modal.delete.cancel', {
             defaultMessage: 'Cancel',
           })}

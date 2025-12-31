@@ -37,6 +37,12 @@ export class TodosClient {
         .addArray("complianceFrameworks", params?.complianceFrameworks)
         .addIfDefined("dueDateAfter", params?.dueDateAfter)
         .addIfDefined("dueDateBefore", params?.dueDateBefore)
+        .addIfDefined("createdAfter", params?.createdAfter)
+        .addIfDefined("createdBefore", params?.createdBefore)
+        .addIfDefined("updatedAfter", params?.updatedAfter)
+        .addIfDefined("updatedBefore", params?.updatedBefore)
+        .addIfDefined("completedAfter", params?.completedAfter)
+        .addIfDefined("completedBefore", params?.completedBefore)
         .addBoolean("isOverdue", params?.isOverdue);
     });
 

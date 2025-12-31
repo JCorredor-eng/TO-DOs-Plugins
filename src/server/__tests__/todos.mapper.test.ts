@@ -406,6 +406,15 @@ describe('TodosMapper', () => {
             { key: '2024-01-02', key_as_string: '2024-01-02', doc_count: 15 },
           ],
         },
+        top_assignees: {
+          buckets: [
+            { key: 'john.doe', doc_count: 25 },
+            { key: 'jane.smith', doc_count: 20 },
+          ],
+        },
+        unassigned: {
+          doc_count: 15,
+        },
       };
       const result = TodosMapper.toTodoStats(100, aggregations);
       expect(result.total).toBe(100);
@@ -422,12 +431,19 @@ describe('TodosMapper', () => {
         { date: '2024-01-01', count: 10 },
         { date: '2024-01-02', count: 15 },
       ]);
+      expect(result.topAssignees).toEqual([
+        { assignee: 'john.doe', count: 25 },
+        { assignee: 'jane.smith', count: 20 },
+      ]);
+      expect(result.unassignedCount).toBe(15);
     });
     it('should handle empty buckets', () => {
       const aggregations: OpenSearchStatsAggregations = {
         by_status: { buckets: [] },
         top_tags: { buckets: [] },
         completed_over_time: { buckets: [] },
+        top_assignees: { buckets: [] },
+        unassigned: { doc_count: 0 },
       };
       const result = TodosMapper.toTodoStats(0, aggregations);
       expect(result.total).toBe(0);
@@ -438,6 +454,8 @@ describe('TodosMapper', () => {
       });
       expect(result.topTags).toEqual([]);
       expect(result.completedOverTime).toEqual([]);
+      expect(result.topAssignees).toEqual([]);
+      expect(result.unassignedCount).toBe(0);
     });
     it('should use key if key_as_string is missing', () => {
       const aggregations: OpenSearchStatsAggregations = {
@@ -446,6 +464,8 @@ describe('TodosMapper', () => {
         completed_over_time: {
           buckets: [{ key: '2024-01-01', doc_count: 5 }],
         },
+        top_assignees: { buckets: [] },
+        unassigned: { doc_count: 0 },
       };
       const result = TodosMapper.toTodoStats(5, aggregations);
       expect(result.completedOverTime).toEqual([{ date: '2024-01-01', count: 5 }]);

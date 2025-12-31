@@ -1,172 +1,78 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React from 'react';
 import {
   EuiPage,
   EuiPageBody,
   EuiPageContent,
   EuiPageContentBody,
   EuiPageHeader,
-  EuiTitle,
   EuiButton,
   EuiTabbedContent,
   EuiTabbedContentTab,
   EuiSpacer,
-  EuiLoadingSpinner,
   EuiEmptyPrompt,
   EuiCallOut,
   EuiText,
+  EuiTitle,
 } from '@elastic/eui';
 import { FormattedMessage } from '@osd/i18n/react';
 import { HttpSetup, NotificationsStart } from '../../../../../src/core/public';
-import { TodosClient } from '../api/todos.client';
-import { useTodos } from '../hooks/use_todos';
-import { useCreateTodo } from '../hooks/use_create_todo';
-import { useUpdateTodo } from '../hooks/use_update_todo';
-import { useDeleteTodo } from '../hooks/use_delete_todo';
-import { useTodoStats } from '../hooks/use_todo_stats';
-import { useTodoAnalytics } from '../hooks/use_todo_analytics';
 import { TodosTable } from './TodosTable';
 import { TodosStatsDashboard } from './TodosStatsDashboard';
 import { TodoForm } from './TodoForm';
 import { TodoFilters } from './TodoFilters';
 import { ComplianceDashboard } from './ComplianceDashboard';
 import { LanguageSelector } from '../../../components/language-selector';
-import { Todo, TodoStatus, TodoPriority, TodoSeverity, TodoSortField } from '../../../../common/todo/todo.types';
-import { CreateTodoRequest, UpdateTodoRequest } from '../../../../common/todo/todo.dtos';
+import { useTodosPage } from '../hooks/use_todos_page';
+
 interface TodosPageProps {
   http: HttpSetup;
   notifications: NotificationsStart;
+  dateRange?: {
+    from: string;
+    to: string;
+  };
 }
-export const TodosPage: React.FC<TodosPageProps> = ({ http, notifications }) => {
-  const client = useMemo(() => new TodosClient(http), [http]);
-  const [selectedTab, setSelectedTab] = useState<'table' | 'analytics'>('table');
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [todoToEdit, setTodoToEdit] = useState<Todo | null>(null);
-  const [complianceFrameworkFilter, setComplianceFrameworkFilter] = useState<string | undefined>(undefined);
-  const [searchText, setSearchText] = useState<string>();
-  const [selectedStatuses, setSelectedStatuses] = useState<TodoStatus[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedPriorities, setSelectedPriorities] = useState<TodoPriority[]>([]);
-  const [selectedSeverities, setSelectedSeverities] = useState<TodoSeverity[]>([]);
-  const [showOverdueOnly, setShowOverdueOnly] = useState<boolean>(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-  const [sortField, setSortField] = useState<TodoSortField>('createdAt');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const queryParams = useMemo(
-    () => ({
-      page: currentPage,
-      pageSize,
-      searchText,
-      status: selectedStatuses.length > 0 ? selectedStatuses : undefined,
-      tags: selectedTags.length > 0 ? selectedTags : undefined,
-      priority: selectedPriorities.length > 0 ? selectedPriorities : undefined,
-      severity: selectedSeverities.length > 0 ? selectedSeverities : undefined,
-      isOverdue: showOverdueOnly ? true : undefined,
-      sortField,
-      sortDirection,
-    }),
-    [currentPage, pageSize, searchText, selectedStatuses, selectedTags, selectedPriorities, selectedSeverities, showOverdueOnly, sortField, sortDirection]
-  );
-  const { todos, pagination, loading, error, refresh } = useTodos({
-    client,
-    initialParams: queryParams,
-  });
-  const { stats, loading: statsLoading, error: statsError, refresh: refreshStats } = useTodoStats({
-    client,
-  });
 
-  const analyticsFilters = useMemo(
-    () => (complianceFrameworkFilter ? { complianceFramework: complianceFrameworkFilter } : undefined),
-    [complianceFrameworkFilter]
-  );
+export const TodosPage: React.FC<TodosPageProps> = ({ http, notifications, dateRange }) => {
+  const { data, uiState, actions } = useTodosPage({ http, notifications, dateRange });
 
-  const { data: analytics, loading: analyticsLoading, error: analyticsError, refresh: refreshAnalytics } = useTodoAnalytics({
-    client,
-    filters: analyticsFilters,
-  });
-  const { createTodo, loading: createLoading } = useCreateTodo({
-    client,
-    notifications,
-    onSuccess: () => {
-      setIsFormOpen(false);
-      refresh();
-      refreshStats();
-      refreshAnalytics();
-    },
-  });
-  const { updateTodo, loading: updateLoading } = useUpdateTodo({
-    client,
-    notifications,
-    onSuccess: () => {
-      setIsFormOpen(false);
-      setTodoToEdit(null);
-      refresh();
-      refreshStats();
-      refreshAnalytics();
-    },
-  });
-  const { deleteTodo } = useDeleteTodo({
-    client,
-    notifications,
-    onSuccess: () => {
-      refresh();
-      refreshStats();
-      refreshAnalytics();
-    },
-  });
-  const handleFiltersChange = useCallback(
-    (filters: {
-      searchText?: string;
-      status?: TodoStatus[];
-      tags?: string[];
-      priority?: TodoPriority[];
-      severity?: TodoSeverity[];
-      isOverdue?: boolean;
-    }) => {
-      setSearchText(filters.searchText);
-      setSelectedStatuses(filters.status || []);
-      setSelectedTags(filters.tags || []);
-      setSelectedPriorities(filters.priority || []);
-      setSelectedSeverities(filters.severity || []);
-      setShowOverdueOnly(filters.isOverdue || false);
-      setCurrentPage(1);
-    },
-    []
-  );
-  const handleTableChange = useCallback(
-    (page: number, newPageSize: number, newSortField?: TodoSortField, newSortDirection?: 'asc' | 'desc') => {
-      setCurrentPage(page);
-      setPageSize(newPageSize);
-      if (newSortField) setSortField(newSortField);
-      if (newSortDirection) setSortDirection(newSortDirection);
-    },
-    []
-  );
-  const handleCreateClick = useCallback(() => {
-    setTodoToEdit(null);
-    setIsFormOpen(true);
-  }, []);
-  const handleEditClick = useCallback((todo: Todo) => {
-    setTodoToEdit(todo);
-    setIsFormOpen(true);
-  }, []);
-  const handleFormClose = useCallback(() => {
-    setIsFormOpen(false);
-    setTodoToEdit(null);
-  }, []);
-  const handleFormSubmit = useCallback(
-    async (data: CreateTodoRequest | UpdateTodoRequest) => {
-      if (todoToEdit) {
-        await updateTodo(todoToEdit.id, data as UpdateTodoRequest);
-      } else {
-        await createTodo(data as CreateTodoRequest);
-      }
-    },
-    [todoToEdit, updateTodo, createTodo]
-  );
-  const handleFrameworkFilterChange = useCallback((framework: string | undefined) => {
-    setComplianceFrameworkFilter(framework);
-  }, []);
+  const { todos, pagination, stats, analytics, client } = data;
+
+  const {
+    selectedTab,
+    isFormOpen,
+    todoToEdit,
+    loading,
+    error,
+    statsLoading,
+    statsError,
+    analyticsLoading,
+    analyticsError,
+    createLoading,
+    updateLoading,
+    searchText,
+    selectedStatuses,
+    selectedTags,
+    selectedPriorities,
+    selectedSeverities,
+    showOverdueOnly,
+    dateFilters,
+    sortField,
+    sortDirection,
+  } = uiState;
+
+  const {
+    setSelectedTab,
+    handleFiltersChange,
+    handleTableChange,
+    handleCreateClick,
+    handleEditClick,
+    handleFormClose,
+    handleFormSubmit,
+    deleteTodo,
+    refreshAnalytics,
+    handleFrameworkFilterChange,
+  } = actions;
   const tabs: EuiTabbedContentTab[] = [
     {
       id: 'table',
@@ -181,6 +87,7 @@ export const TodosPage: React.FC<TodosPageProps> = ({ http, notifications }) => 
             selectedPriorities={selectedPriorities}
             selectedSeverities={selectedSeverities}
             showOverdueOnly={showOverdueOnly}
+            dateFilters={dateFilters}
             onFiltersChange={handleFiltersChange}
           />
           {error ? (

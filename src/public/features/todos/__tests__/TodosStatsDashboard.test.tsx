@@ -23,6 +23,12 @@ describe('TodosStatsDashboard', () => {
       { date: '2024-01-02', count: 15 },
       { date: '2024-01-03', count: 8 },
     ],
+    topAssignees: [
+      { assignee: 'john.doe', count: 35 },
+      { assignee: 'jane.smith', count: 28 },
+      { assignee: 'bob.wilson', count: 22 },
+    ],
+    unassignedCount: 15,
   };
   const defaultProps = {
     stats: mockStats,
@@ -70,6 +76,8 @@ describe('TodosStatsDashboard', () => {
         byStatus: { planned: 0, done: 0, error: 0 },
         topTags: [],
         completedOverTime: [],
+        topAssignees: [],
+        unassignedCount: 0,
       };
       render(<TodosStatsDashboard {...defaultProps} stats={emptyStats} />);
       expect(screen.getByText('No Statistics Available')).toBeInTheDocument();
@@ -142,6 +150,8 @@ describe('TodosStatsDashboard', () => {
         byStatus: { planned: 0, done: 0, error: 0 },
         topTags: [],
         completedOverTime: [],
+        topAssignees: [],
+        unassignedCount: 0,
       };
       render(<TodosStatsDashboard {...defaultProps} stats={zeroStats} />);
       expect(screen.getByText('No Statistics Available')).toBeInTheDocument();
@@ -175,6 +185,7 @@ describe('TodosStatsDashboard', () => {
       const noTagsStats: TodoStats = {
         ...mockStats,
         topTags: [],
+        topAssignees: [],
       };
       render(<TodosStatsDashboard {...defaultProps} stats={noTagsStats} />);
       expect(screen.queryByText('Top Tags')).not.toBeInTheDocument();
@@ -188,6 +199,7 @@ describe('TodosStatsDashboard', () => {
       const singleTagStats: TodoStats = {
         ...mockStats,
         topTags: [{ tag: 'solo-tag', count: 50 }],
+        topAssignees: [],
       };
       render(<TodosStatsDashboard {...defaultProps} stats={singleTagStats} />);
       expect(screen.getByText('Top Tags')).toBeInTheDocument();
@@ -215,10 +227,12 @@ describe('TodosStatsDashboard', () => {
   describe('Edge Cases', () => {
     it('should handle stats with all zeros', () => {
       const allZeroStats: TodoStats = {
-        total: 100, 
+        total: 100,
         byStatus: { planned: 0, done: 0, error: 0 },
         topTags: [],
         completedOverTime: [],
+        topAssignees: [],
+        unassignedCount: 0,
       };
       render(<TodosStatsDashboard {...defaultProps} stats={allZeroStats} />);
       expect(screen.getByText('100')).toBeInTheDocument();
@@ -231,6 +245,8 @@ describe('TodosStatsDashboard', () => {
         byStatus: { planned: 333333, done: 333333, error: 333333 },
         topTags: [{ tag: 'large', count: 999999 }],
         completedOverTime: [],
+        topAssignees: [],
+        unassignedCount: 0,
       };
       render(<TodosStatsDashboard {...defaultProps} stats={largeStats} />);
       expect(screen.getByText('999999')).toBeInTheDocument();
@@ -241,6 +257,8 @@ describe('TodosStatsDashboard', () => {
         byStatus: { planned: 50, done: 0, error: 0 },
         topTags: [],
         completedOverTime: [],
+        topAssignees: [],
+        unassignedCount: 0,
       };
       render(<TodosStatsDashboard {...defaultProps} stats={oneStatusStats} />);
       const fiftyElements = screen.getAllByText('50');
@@ -256,6 +274,8 @@ describe('TodosStatsDashboard', () => {
         byStatus: { planned: 1, done: 1, error: 1 },
         topTags: [{ tag: 'tag1', count: 1 }],
         completedOverTime: [],
+        topAssignees: [],
+        unassignedCount: 0,
       };
       render(<TodosStatsDashboard {...defaultProps} stats={oddStats} />);
       const thirtyThreePercent = screen.getAllByText(/\(33%\)/);
@@ -265,6 +285,7 @@ describe('TodosStatsDashboard', () => {
       const noTimelineStats: TodoStats = {
         ...mockStats,
         completedOverTime: [],
+        topAssignees: [],
       };
       render(<TodosStatsDashboard {...defaultProps} stats={noTimelineStats} />);
       expect(screen.getByText('Total TODOs')).toBeInTheDocument();
@@ -310,6 +331,8 @@ describe('TodosStatsDashboard', () => {
         byStatus: { planned: 1, done: 0, error: 0 },
         topTags: [{ tag: 'single', count: 1 }],
         completedOverTime: [{ date: '2024-01-01', count: 1 }],
+        topAssignees: [],
+        unassignedCount: 0,
       };
       render(<TodosStatsDashboard {...defaultProps} stats={minimalStats} />);
       expect(screen.getByText('Total TODOs')).toBeInTheDocument();

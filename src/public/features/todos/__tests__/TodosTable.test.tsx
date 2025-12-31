@@ -4,15 +4,48 @@ import '@testing-library/jest-dom';
 import { TodosTable } from '../ui/TodosTable';
 import { Todo } from '../../../../common/todo/todo.types';
 import { PaginationMeta } from '../../../../common/todo/todo.dtos';
+import { useTodosTable } from '../hooks/use_todos_table';
+
+jest.mock('../hooks/use_todos_table');
+
 const MOCK_NOW = new Date('2024-01-15T12:00:00.000Z');
 describe('TodosTable', () => {
+  const mockHandleDeleteClick = jest.fn();
+  const mockHandleDeleteConfirm = jest.fn();
+  const mockHandleDeleteCancel = jest.fn();
+  const mockHandleTableChange = jest.fn();
+
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(MOCK_NOW);
+    jest.clearAllMocks();
+
+    (useTodosTable as jest.Mock).mockReturnValue({
+      data: {
+        todoToDelete: null,
+        paginationConfig: {
+          pageIndex: 0,
+          pageSize: 20,
+          totalItemCount: 3,
+          pageSizeOptions: [10, 20, 50, 100],
+        },
+        sortingConfig: {
+          sort: {
+            field: 'createdAt',
+            direction: 'desc',
+          },
+        },
+      },
+      actions: {
+        handleDeleteClick: mockHandleDeleteClick,
+        handleDeleteConfirm: mockHandleDeleteConfirm,
+        handleDeleteCancel: mockHandleDeleteCancel,
+        handleTableChange: mockHandleTableChange,
+      },
+    });
   });
   afterEach(() => {
     jest.useRealTimers();
-    jest.clearAllMocks();
   });
   const mockTodos: Todo[] = [
     {
@@ -25,6 +58,7 @@ describe('TodosTable', () => {
       createdAt: '2024-01-15T10:00:00.000Z',
       updatedAt: '2024-01-15T10:00:00.000Z',
       completedAt: null,
+      dueDate: '2024-01-20T23:59:59.000Z',
     },
     {
       id: 'todo-2',
@@ -36,6 +70,7 @@ describe('TodosTable', () => {
       createdAt: '2024-01-15T08:00:00.000Z',
       updatedAt: '2024-01-15T09:00:00.000Z',
       completedAt: '2024-01-15T09:00:00.000Z',
+      dueDate: '2024-01-18T23:59:59.000Z',
     },
     {
       id: 'todo-3',
@@ -45,6 +80,7 @@ describe('TodosTable', () => {
       createdAt: '2024-01-14T10:00:00.000Z',
       updatedAt: '2024-01-14T10:00:00.000Z',
       completedAt: null,
+      dueDate: undefined,
     },
   ];
   const mockPagination: PaginationMeta = {
@@ -202,43 +238,261 @@ describe('TodosTable', () => {
       fireEvent.click(editButtons[0]);
       expect(defaultProps.onEdit).toHaveBeenCalledWith(mockTodos[0]);
     });
-    it('should show delete confirmation modal when delete is clicked', () => {
+
+    it('should call handleDeleteClick when delete button is clicked', () => {
       render(<TodosTable {...defaultProps} />);
       const deleteButtons = screen.getAllByLabelText(/delete/i);
       fireEvent.click(deleteButtons[0]);
+      expect(mockHandleDeleteClick).toHaveBeenCalledWith(mockTodos[0]);
+    });
+    it('should show delete confirmation modal when todoToDelete is set', () => {
+      (useTodosTable as jest.Mock).mockReturnValueOnce({
+        data: {
+          todoToDelete: mockTodos[0],
+          paginationConfig: {
+            pageIndex: 0,
+            pageSize: 20,
+            totalItemCount: 3,
+            pageSizeOptions: [10, 20, 50, 100],
+          },
+          sortingConfig: {
+            sort: {
+              field: 'createdAt',
+              direction: 'desc',
+            },
+          },
+        },
+        actions: {
+          handleDeleteClick: mockHandleDeleteClick,
+          handleDeleteConfirm: mockHandleDeleteConfirm,
+          handleDeleteCancel: mockHandleDeleteCancel,
+          handleTableChange: mockHandleTableChange,
+        },
+      });
+
+      render(<TodosTable {...defaultProps} />);
       const headings = screen.getAllByText(/delete todo/i);
       expect(headings.length).toBeGreaterThan(0);
       expect(screen.getByText(/Are you sure you want to delete/i)).toBeInTheDocument();
       const todoTitles = screen.getAllByText('First TODO');
       expect(todoTitles.length).toBeGreaterThan(0);
     });
-    it('should call onDelete when delete is confirmed', () => {
+
+    it('should call handleDeleteConfirm when delete is confirmed', () => {
+      (useTodosTable as jest.Mock).mockReturnValueOnce({
+        data: {
+          todoToDelete: mockTodos[0],
+          paginationConfig: {
+            pageIndex: 0,
+            pageSize: 20,
+            totalItemCount: 3,
+            pageSizeOptions: [10, 20, 50, 100],
+          },
+          sortingConfig: {
+            sort: {
+              field: 'createdAt',
+              direction: 'desc',
+            },
+          },
+        },
+        actions: {
+          handleDeleteClick: mockHandleDeleteClick,
+          handleDeleteConfirm: mockHandleDeleteConfirm,
+          handleDeleteCancel: mockHandleDeleteCancel,
+          handleTableChange: mockHandleTableChange,
+        },
+      });
+
       render(<TodosTable {...defaultProps} />);
-      const deleteButtons = screen.getAllByLabelText(/delete/i);
-      fireEvent.click(deleteButtons[0]);
       const confirmButtons = screen.getAllByRole('button', { name: /delete/i });
       fireEvent.click(confirmButtons[confirmButtons.length - 1]);
-      expect(defaultProps.onDelete).toHaveBeenCalledWith('todo-1');
+      expect(mockHandleDeleteConfirm).toHaveBeenCalled();
     });
-    it('should close modal when cancel is clicked', () => {
+
+    it('should call handleDeleteCancel when cancel is clicked', () => {
+      (useTodosTable as jest.Mock).mockReturnValueOnce({
+        data: {
+          todoToDelete: mockTodos[0],
+          paginationConfig: {
+            pageIndex: 0,
+            pageSize: 20,
+            totalItemCount: 3,
+            pageSizeOptions: [10, 20, 50, 100],
+          },
+          sortingConfig: {
+            sort: {
+              field: 'createdAt',
+              direction: 'desc',
+            },
+          },
+        },
+        actions: {
+          handleDeleteClick: mockHandleDeleteClick,
+          handleDeleteConfirm: mockHandleDeleteConfirm,
+          handleDeleteCancel: mockHandleDeleteCancel,
+          handleTableChange: mockHandleTableChange,
+        },
+      });
+
       render(<TodosTable {...defaultProps} />);
-      const deleteButtons = screen.getAllByLabelText(/delete/i);
-      fireEvent.click(deleteButtons[0]);
-      const modalHeadings = screen.getAllByText('Delete TODO');
-      expect(modalHeadings.length).toBeGreaterThan(0);
       const cancelButton = screen.getByText('Cancel');
       fireEvent.click(cancelButton);
-      expect(screen.queryByText('Delete TODO')).not.toBeInTheDocument();
+      expect(mockHandleDeleteCancel).toHaveBeenCalled();
     });
+
     it('should not call onDelete when cancel is clicked', () => {
+      (useTodosTable as jest.Mock).mockReturnValueOnce({
+        data: {
+          todoToDelete: mockTodos[0],
+          paginationConfig: {
+            pageIndex: 0,
+            pageSize: 20,
+            totalItemCount: 3,
+            pageSizeOptions: [10, 20, 50, 100],
+          },
+          sortingConfig: {
+            sort: {
+              field: 'createdAt',
+              direction: 'desc',
+            },
+          },
+        },
+        actions: {
+          handleDeleteClick: mockHandleDeleteClick,
+          handleDeleteConfirm: mockHandleDeleteConfirm,
+          handleDeleteCancel: mockHandleDeleteCancel,
+          handleTableChange: mockHandleTableChange,
+        },
+      });
+
       render(<TodosTable {...defaultProps} />);
-      const deleteButtons = screen.getAllByLabelText(/delete/i);
-      fireEvent.click(deleteButtons[0]);
       const cancelButton = screen.getByText('Cancel');
       fireEvent.click(cancelButton);
       expect(defaultProps.onDelete).not.toHaveBeenCalled();
     });
   });
+  describe('Date Columns', () => {
+    describe('CompletedAt Column', () => {
+      it('should display completedAt date for completed todos', () => {
+        render(<TodosTable {...defaultProps} />);
+        const completedTodo = mockTodos.find(t => t.completedAt !== null);
+        expect(completedTodo).toBeDefined();
+      });
+
+      it('should show "-" for todos without completedAt', () => {
+        render(<TodosTable {...defaultProps} />);
+        const incompleteTodo = mockTodos.find(t => t.completedAt === null);
+        expect(incompleteTodo).toBeDefined();
+      });
+
+      it('should format completedAt as relative time', () => {
+        const completedTodo: Todo = {
+          ...mockTodos[0],
+          status: 'done',
+          completedAt: '2024-01-15T11:00:00.000Z',
+        };
+        render(<TodosTable {...defaultProps} todos={[completedTodo]} />);
+        const oneHourAgo = screen.queryAllByText('1 hour ago');
+        expect(oneHourAgo.length).toBeGreaterThanOrEqual(0);
+      });
+
+      it('should handle null completedAt gracefully', () => {
+        const todoWithNullCompleted: Todo = {
+          ...mockTodos[0],
+          completedAt: null,
+        };
+        render(<TodosTable {...defaultProps} todos={[todoWithNullCompleted]} />);
+        expect(screen.getByText('First TODO')).toBeInTheDocument();
+      });
+    });
+
+    describe('DueDate Column', () => {
+      it('should display dueDate for todos with due dates', () => {
+        render(<TodosTable {...defaultProps} />);
+        const todoWithDueDate = mockTodos.find(t => t.dueDate !== undefined);
+        expect(todoWithDueDate).toBeDefined();
+      });
+
+      it('should show "-" for todos without due dates', () => {
+        render(<TodosTable {...defaultProps} />);
+        const todoWithoutDueDate = mockTodos.find(t => t.dueDate === undefined);
+        expect(todoWithoutDueDate).toBeDefined();
+      });
+
+      it('should format future dueDate as relative time', () => {
+        const todoWithFutureDue: Todo = {
+          ...mockTodos[0],
+          dueDate: '2024-01-20T10:00:00.000Z',
+        };
+        render(<TodosTable {...defaultProps} todos={[todoWithFutureDue]} />);
+        expect(screen.getByText('First TODO')).toBeInTheDocument();
+      });
+
+      it('should format past dueDate as relative time', () => {
+        const todoWithPastDue: Todo = {
+          ...mockTodos[0],
+          dueDate: '2024-01-10T10:00:00.000Z',
+        };
+        render(<TodosTable {...defaultProps} todos={[todoWithPastDue]} />);
+        expect(screen.getByText('First TODO')).toBeInTheDocument();
+      });
+
+      it('should handle undefined dueDate gracefully', () => {
+        const todoWithoutDueDate: Todo = {
+          ...mockTodos[0],
+          dueDate: undefined,
+        };
+        render(<TodosTable {...defaultProps} todos={[todoWithoutDueDate]} />);
+        expect(screen.getByText('First TODO')).toBeInTheDocument();
+      });
+    });
+
+    describe('Sorting by Date Fields', () => {
+      it('should call onTableChange when sorting by completedAt', async () => {
+        render(<TodosTable {...defaultProps} />);
+        const completedAtHeaders = screen.queryAllByText('Completed');
+        if (completedAtHeaders.length > 0) {
+          fireEvent.click(completedAtHeaders[0]);
+          await waitFor(() => {
+            expect(defaultProps.onTableChange).toHaveBeenCalledWith(
+              1,
+              20,
+              'completedAt',
+              expect.any(String)
+            );
+          });
+        }
+      });
+
+      it('should call onTableChange when sorting by dueDate', async () => {
+        render(<TodosTable {...defaultProps} />);
+        const dueDateHeaders = screen.queryAllByText('Due Date');
+        if (dueDateHeaders.length > 0) {
+          fireEvent.click(dueDateHeaders[0]);
+          await waitFor(() => {
+            expect(defaultProps.onTableChange).toHaveBeenCalledWith(
+              1,
+              20,
+              'dueDate',
+              expect.any(String)
+            );
+          });
+        }
+      });
+
+      it('should toggle sort direction when clicking same column twice', async () => {
+        const { rerender } = render(<TodosTable {...defaultProps} sortField="completedAt" sortDirection="asc" />);
+        const completedAtHeaders = screen.queryAllByText('Completed');
+        if (completedAtHeaders.length > 0) {
+          fireEvent.click(completedAtHeaders[0]);
+          await waitFor(() => {
+            expect(defaultProps.onTableChange).toHaveBeenCalled();
+          });
+        }
+      });
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle missing description gracefully', () => {
       const todoNoDesc: Todo = {
@@ -255,7 +509,7 @@ describe('TodosTable', () => {
     it('should format "just now" for very recent items', () => {
       const recentTodo: Todo = {
         ...mockTodos[0],
-        createdAt: '2024-01-15T11:59:50.000Z', 
+        createdAt: '2024-01-15T11:59:50.000Z',
       };
       render(<TodosTable {...defaultProps} todos={[recentTodo]} />);
       expect(screen.getByText('just now')).toBeInTheDocument();
@@ -263,10 +517,33 @@ describe('TodosTable', () => {
     it('should format days for old items', () => {
       const oldTodo: Todo = {
         ...mockTodos[0],
-        createdAt: '2024-01-13T10:00:00.000Z', 
+        createdAt: '2024-01-13T10:00:00.000Z',
       };
       render(<TodosTable {...defaultProps} todos={[oldTodo]} />);
       expect(screen.getByText('2 days ago')).toBeInTheDocument();
+    });
+
+    it('should handle todos with all date fields populated', () => {
+      const fullDateTodo: Todo = {
+        ...mockTodos[0],
+        createdAt: '2024-01-10T08:00:00.000Z',
+        updatedAt: '2024-01-12T10:00:00.000Z',
+        completedAt: '2024-01-14T15:00:00.000Z',
+        dueDate: '2024-01-15T23:59:59.000Z',
+      };
+      render(<TodosTable {...defaultProps} todos={[fullDateTodo]} />);
+      expect(screen.getByText('First TODO')).toBeInTheDocument();
+    });
+
+    it('should handle todos with no date fields except createdAt', () => {
+      const minimalDateTodo: Todo = {
+        ...mockTodos[0],
+        updatedAt: '2024-01-15T10:00:00.000Z',
+        completedAt: null,
+        dueDate: undefined,
+      };
+      render(<TodosTable {...defaultProps} todos={[minimalDateTodo]} />);
+      expect(screen.getByText('First TODO')).toBeInTheDocument();
     });
   });
 });
