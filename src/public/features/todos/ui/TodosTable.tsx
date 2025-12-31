@@ -13,53 +13,7 @@ import { i18n } from '@osd/i18n';
 import { Todo, TODO_STATUS_COLORS, TODO_STATUS_LABELS, TodoSortField } from '../../../../common/todo/todo.types';
 import { PaginationMeta } from '../../../../common/todo/todo.dtos';
 import { useTodosTable } from '../hooks/use_todos_table';
-
-const formatRelativeTime = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSecs = Math.floor(diffMs / 1000);
-  const diffMins = Math.floor(diffSecs / 60);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffDays > 0) {
-    return i18n.translate('customPlugin.time.daysAgo', {
-      defaultMessage: '{count, plural, =1 {# day ago} other {# days ago}}',
-      values: { count: diffDays },
-    });
-  }
-  if (diffHours > 0) {
-    return i18n.translate('customPlugin.time.hoursAgo', {
-      defaultMessage: '{count, plural, =1 {# hour ago} other {# hours ago}}',
-      values: { count: diffHours },
-    });
-  }
-  if (diffMins > 0) {
-    return i18n.translate('customPlugin.time.minutesAgo', {
-      defaultMessage: '{count, plural, =1 {# minute ago} other {# minutes ago}}',
-      values: { count: diffMins },
-    });
-  }
-  return i18n.translate('customPlugin.time.justNow', {
-    defaultMessage: 'just now',
-  });
-};
-
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-};
-
-const isOverdue = (dueDateString: string): boolean => {
-  const dueDate = new Date(dueDateString);
-  const now = new Date();
-  return dueDate < now;
-};
+import { formatRelativeTime, formatDate, isOverdue } from '../../../utils/date-formatters';
 
 interface TodosTableProps {
   todos: Todo[];

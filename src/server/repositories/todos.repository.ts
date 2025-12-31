@@ -143,18 +143,48 @@ export interface AnalyticsResult {
   total: number;
   aggregations: OpenSearchAnalyticsAggregations;
 }
+
+/**
+ * Repository layer for TODO data access with OpenSearch.
+ *
+ * Provides the single boundary for all OpenSearch operations. Encapsulates
+ * query building, index management, and error handling for TODO data.
+ *
+ * @remarks
+ * This repository implements the data access layer in the 5-layer architecture:
+ * Routes → Controllers → Services → **Repositories** → Mappers
+ *
+ * All OpenSearch operations MUST go through this repository (PROJECT RULE #2).
+ */
 export class TodosRepository {
   private readonly indexName: string;
   private readonly logger: Logger;
   private readonly indexManager: IndexManager;
+
   constructor(logger: Logger, indexManager: IndexManager, indexName: string = DEFAULT_INDEX_NAME) {
     this.logger = logger;
     this.indexManager = indexManager;
     this.indexName = indexName;
   }
+
+  /**
+   * Ensures the TODO index exists before performing operations.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @private
+   */
   private async ensureIndex(client: TodoOpenSearchClient): Promise<void> {
     await this.indexManager.ensureIndex(client);
   }
+
+  /**
+   * Creates a new TODO document in OpenSearch.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @param document - TODO document to create (OpenSearch format)
+   * @returns Created TODO with generated ID
+   * @throws {IndexError} If OpenSearch operation fails
+   */
   async create(client: TodoOpenSearchClient, document: TodoDocument): Promise<Todo> {
     await this.ensureIndex(client);
     try {
@@ -176,6 +206,16 @@ export class TodosRepository {
       });
     }
   }
+
+  /**
+   * Retrieves a TODO document by ID from OpenSearch.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @param id - Document ID to retrieve
+   * @returns TODO item
+   * @throws {NotFoundError} If document with the specified ID does not exist
+   * @throws {IndexError} If OpenSearch operation fails
+   */
   async getById(client: TodoOpenSearchClient, id: string): Promise<Todo> {
     await this.ensureIndex(client);
     try {
@@ -194,6 +234,17 @@ export class TodosRepository {
       });
     }
   }
+
+  /**
+   * Updates a TODO document in OpenSearch with partial updates.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @param id - Document ID to update
+   * @param updates - Partial document with fields to update
+   * @returns True if update was successful
+   * @throws {NotFoundError} If document with the specified ID does not exist
+   * @throws {IndexError} If OpenSearch operation fails
+   */
   async update(
     client: TodoOpenSearchClient,
     id: string,
@@ -219,6 +270,16 @@ export class TodosRepository {
       });
     }
   }
+
+  /**
+   * Deletes a TODO document from OpenSearch.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @param id - Document ID to delete
+   * @returns True if deletion was successful
+   * @throws {NotFoundError} If document with the specified ID does not exist
+   * @throws {IndexError} If OpenSearch operation fails
+   */
   async delete(client: TodoOpenSearchClient, id: string): Promise<boolean> {
     await this.ensureIndex(client);
     try {
@@ -239,6 +300,24 @@ export class TodosRepository {
       });
     }
   }
+
+  /**
+   * Searches TODO documents with filtering, pagination, and sorting.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @param params - Search parameters including filters, pagination, and sort options
+   * @returns Search results with matching TODOs and total count
+   * @throws {IndexError} If OpenSearch operation fails
+   *
+   * @remarks
+   * Supports:
+   * - Full-text search with fuzzy matching
+   * - Multi-field filtering (status, tags, priority, severity, assignee, compliance)
+   * - Date range filtering (due date, created, updated, completed)
+   * - Overdue detection
+   * - Server-side pagination
+   * - Multi-field sorting
+   */
   async search(client: TodoOpenSearchClient, params: TodoSearchParams): Promise<SearchResult> {
     await this.ensureIndex(client);
     const page = Math.max(1, params.page || 1);
@@ -254,6 +333,22 @@ export class TodosRepository {
           sort,
           from,
           size: pageSize,
+          _source: {
+            includes: [
+              'title',
+              'description',
+              'status',
+              'tags',
+              'assignee',
+              'priority',
+              'severity',
+              'due_date',
+              'compliance_framework',
+              'created_at',
+              'updated_at',
+              'completed_at',
+            ],
+          },
         },
       });
       const todos = TodosMapper.fromOpenSearchHits(result.body.hits.hits);
@@ -266,6 +361,23 @@ export class TodosRepository {
       });
     }
   }
+
+  /**
+   * Retrieves aggregated statistics for TODO items.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @param params - Statistics parameters (date filters, intervals, limits)
+   * @returns Aggregated statistics including status distribution, top tags, completion timeline
+   * @throws {IndexError} If OpenSearch operation fails
+   *
+   * @remarks
+   * Statistics include:
+   * - Count by status (planned, done, error)
+   * - Top tags with counts
+   * - Completion over time (histogram)
+   * - Top assignees with counts
+   * - Unassigned count
+   */
   async getStats(client: TodoOpenSearchClient, params: TodoStatsParams): Promise<StatsResult> {
     await this.ensureIndex(client);
     const query = this.buildStatsQuery(params);
@@ -277,7 +389,8 @@ export class TodosRepository {
         index: this.indexName,
         body: {
           query,
-          size: 0, 
+          size: 0,
+          _source: false,
           aggs,
         },
       });
@@ -292,6 +405,20 @@ export class TodosRepository {
       });
     }
   }
+
+  /**
+   * Builds an OpenSearch query from search parameters.
+   *
+   * @param params - Search parameters from service layer
+   * @returns OpenSearch query DSL object
+   * @private
+   *
+   * @remarks
+   * - Uses multi_match for full-text search with fuzzy matching
+   * - Applies term/terms filters for exact matches
+   * - Combines filters using bool query with must/filter clauses
+   * - Returns match_all if no filters are specified
+   */
   private buildSearchQuery(params: TodoSearchParams): Record<string, unknown> {
     const must: unknown[] = [];
     const filter: unknown[] = [];
@@ -340,46 +467,17 @@ export class TodosRepository {
     if (params.complianceFrameworks && params.complianceFrameworks.length > 0) {
       filter.push({ terms: { compliance_framework: params.complianceFrameworks } });
     }
-    if (params.dueDateAfter || params.dueDateBefore) {
-      const range: Record<string, string> = {};
-      if (params.dueDateAfter) {
-        range.gte = params.dueDateAfter;
-      }
-      if (params.dueDateBefore) {
-        range.lte = params.dueDateBefore;
-      }
-      filter.push({ range: { due_date: range } });
-    }
-    if (params.createdAfter || params.createdBefore) {
-      const range: Record<string, string> = {};
-      if (params.createdAfter) {
-        range.gte = params.createdAfter;
-      }
-      if (params.createdBefore) {
-        range.lte = params.createdBefore;
-      }
-      filter.push({ range: { created_at: range } });
-    }
-    if (params.updatedAfter || params.updatedBefore) {
-      const range: Record<string, string> = {};
-      if (params.updatedAfter) {
-        range.gte = params.updatedAfter;
-      }
-      if (params.updatedBefore) {
-        range.lte = params.updatedBefore;
-      }
-      filter.push({ range: { updated_at: range } });
-    }
-    if (params.completedAfter || params.completedBefore) {
-      const range: Record<string, string> = {};
-      if (params.completedAfter) {
-        range.gte = params.completedAfter;
-      }
-      if (params.completedBefore) {
-        range.lte = params.completedBefore;
-      }
-      filter.push({ range: { completed_at: range } });
-    }
+    const dueDateFilter = this.buildDateRangeFilter('due_date', params.dueDateAfter, params.dueDateBefore);
+    if (dueDateFilter) filter.push(dueDateFilter);
+
+    const createdFilter = this.buildDateRangeFilter('created_at', params.createdAfter, params.createdBefore);
+    if (createdFilter) filter.push(createdFilter);
+
+    const updatedFilter = this.buildDateRangeFilter('updated_at', params.updatedAfter, params.updatedBefore);
+    if (updatedFilter) filter.push(updatedFilter);
+
+    const completedFilter = this.buildDateRangeFilter('completed_at', params.completedAfter, params.completedBefore);
+    if (completedFilter) filter.push(completedFilter);
     if (params.isOverdue) {
       filter.push({
         bool: {
@@ -401,6 +499,41 @@ export class TodosRepository {
       },
     };
   }
+
+  /**
+   * Builds a date range filter for OpenSearch queries.
+   *
+   * @param field - The field name to filter on
+   * @param after - Start date (gte)
+   * @param before - End date (lte)
+   * @returns OpenSearch range filter object or null if no dates provided
+   */
+  private buildDateRangeFilter(
+    field: string,
+    after?: string,
+    before?: string
+  ): Record<string, unknown> | null {
+    if (!after && !before) {
+      return null;
+    }
+    const range: Record<string, string> = {};
+    if (after) range.gte = after;
+    if (before) range.lte = before;
+    return { range: { [field]: range } };
+  }
+
+  /**
+   * Builds OpenSearch sort clause from sort parameters.
+   *
+   * @param sortField - Field to sort by (camelCase format)
+   * @param sortDirection - Sort direction (asc or desc)
+   * @returns OpenSearch sort array
+   * @private
+   *
+   * @remarks
+   * Maps camelCase field names to snake_case OpenSearch field names.
+   * Uses .keyword suffix for text fields to enable sorting.
+   */
   private buildSort(
     sortField?: TodoSortField,
     sortDirection?: SortDirection
@@ -420,6 +553,14 @@ export class TodosRepository {
     const mappedField = fieldMapping[field] || 'created_at';
     return [{ [mappedField]: { order: direction } }];
   }
+
+  /**
+   * Builds an OpenSearch query for statistics filtering.
+   *
+   * @param params - Statistics parameters
+   * @returns OpenSearch query DSL object
+   * @private
+   */
   private buildStatsQuery(params: TodoStatsParams): Record<string, unknown> {
     const filter: unknown[] = [];
     if (params.createdAfter || params.createdBefore) {
@@ -437,6 +578,22 @@ export class TodosRepository {
     }
     return { bool: { filter } };
   }
+
+  /**
+   * Builds OpenSearch aggregations for TODO statistics.
+   *
+   * @param params - Statistics parameters (time interval, limits)
+   * @returns OpenSearch aggregations DSL object
+   * @private
+   *
+   * @remarks
+   * Generates aggregations for:
+   * - Status distribution (terms aggregation)
+   * - Top tags (terms aggregation with configurable limit)
+   * - Completion timeline (date histogram with configurable interval)
+   * - Top assignees (terms aggregation)
+   * - Unassigned count (missing aggregation)
+   */
   private buildStatsAggregations(params: TodoStatsParams): Record<string, unknown> {
     const interval = params.timeInterval || 'day';
     const topTagsLimit = params.topTagsLimit || 10;
@@ -481,6 +638,23 @@ export class TodosRepository {
       },
     };
   }
+
+  /**
+   * Retrieves advanced analytics data for compliance and risk assessment.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @param params - Analytics parameters (compliance framework filter, overdue filter)
+   * @returns Analytics aggregations including compliance coverage, overdue tasks, distributions
+   * @throws {IndexError} If OpenSearch operation fails
+   *
+   * @remarks
+   * Analytics include:
+   * - Compliance framework coverage with status breakdown
+   * - Overdue tasks by priority and severity
+   * - Priority distribution across all tasks
+   * - Severity distribution across all tasks
+   * - Priority-severity matrix for risk assessment
+   */
   async getAnalytics(
     client: TodoOpenSearchClient,
     params: TodoAnalyticsParams
@@ -496,6 +670,7 @@ export class TodosRepository {
         body: {
           query,
           size: 0,
+          _source: false,
           aggs,
         },
       });
@@ -510,6 +685,14 @@ export class TodosRepository {
       });
     }
   }
+
+  /**
+   * Builds an OpenSearch query for analytics filtering.
+   *
+   * @param params - Analytics parameters
+   * @returns OpenSearch query DSL object
+   * @private
+   */
   private buildAnalyticsQuery(params: TodoAnalyticsParams): Record<string, unknown> {
     const filter: unknown[] = [];
     if (params.complianceFramework) {
@@ -531,6 +714,21 @@ export class TodosRepository {
     }
     return { bool: { filter } };
   }
+
+  /**
+   * Builds OpenSearch aggregations for advanced analytics.
+   *
+   * @returns OpenSearch aggregations DSL object for compliance and risk analytics
+   * @private
+   *
+   * @remarks
+   * Generates nested aggregations for:
+   * - Compliance coverage by framework and status
+   * - Overdue tasks with priority and severity breakdown
+   * - Priority distribution
+   * - Severity distribution
+   * - Priority-severity matrix (nested aggregation)
+   */
   private buildAnalyticsAggregations(): Record<string, unknown> {
     return {
       compliance_coverage: {
@@ -601,6 +799,17 @@ export class TodosRepository {
     };
   }
 
+  /**
+   * Retrieves unique tags and compliance frameworks for autocomplete suggestions.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @returns Lists of unique tags and compliance frameworks currently in use
+   * @throws {IndexError} If OpenSearch operation fails
+   *
+   * @remarks
+   * Uses terms aggregations to extract unique values efficiently without
+   * retrieving full documents. Limits results to top 100 of each.
+   */
   async getSuggestions(client: TodoOpenSearchClient): Promise<{
     tags: string[];
     complianceFrameworks: string[];
@@ -649,6 +858,13 @@ export class TodosRepository {
     }
   }
 }
+
+/**
+ * Checks if an error is a 404 Not Found error from OpenSearch.
+ *
+ * @param error - Error object to check
+ * @returns True if the error indicates a document was not found
+ */
 function isNotFoundError(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
     return false;

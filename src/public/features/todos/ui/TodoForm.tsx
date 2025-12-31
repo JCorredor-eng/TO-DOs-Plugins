@@ -21,6 +21,8 @@ import { i18n } from '@osd/i18n';
 import {
   Todo,
   TodoStatus,
+  TodoPriority,
+  TodoSeverity,
   MAX_COMPLIANCE_FRAMEWORKS,
 } from '../../../../common/todo/todo.types';
 import { CreateTodoRequest, UpdateTodoRequest } from '../../../../common/todo/todo.dtos';

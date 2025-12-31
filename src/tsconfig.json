@@ -34,13 +34,14 @@
     "public/**/*.ts",
     "public/**/*.tsx",
     "server/**/*.ts",
-    "server/**/*.tsx"
+    "server/**/*.tsx",
+    "**/__tests__/**/*.ts",
+    "**/__tests__/**/*.tsx",
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ],
   "exclude": [
     "node_modules",
-    "target",
-    "**/__tests__/**",
-    "**/*.test.ts",
-    "**/*.test.tsx"
+    "target"
   ]
 }

@@ -6,6 +6,7 @@
 - [Getting Started](#getting-started)
 - [Creating Tasks](#creating-tasks)
 - [Managing Tasks](#managing-tasks)
+- [Kanban Board View](#kanban-board-view)
 - [Search and Filtering](#search-and-filtering)
 - [Analytics Dashboard](#analytics-dashboard)
 - [Compliance and Security Tracking](#compliance-and-security-tracking)
@@ -21,6 +22,8 @@ The Task Management Plugin for OpenSearch Dashboards is a comprehensive solution
 ### Key Features
 
 - **Full Task Lifecycle Management**: Create, update, track, and complete security-related tasks
+- **Multiple View Modes**: Switch between Table View, Kanban Board, and Analytics Dashboard
+- **Kanban Board with Drag-and-Drop**: Visual workflow management with intuitive drag-and-drop task status updates
 - **Advanced Search and Filtering**: Quickly find tasks using multiple filter criteria
 - **Compliance Framework Tracking**: Associate tasks with industry standards (PCI, ISO, HIPAA, SOC2, GDPR, NIST)
 - **Priority and Severity Management**: Classify tasks by urgency and impact
@@ -42,8 +45,9 @@ The Task Management Plugin for OpenSearch Dashboards is a comprehensive solution
 
 1. Log in to OpenSearch Dashboards using your credentials
 2. In the left navigation menu, locate and click on **"Task Management"** or **"Gestión de Tareas"**
-3. The main task management interface will load with two tabs:
-   - **Table View** (Vista de Tabla): Task list and management
+3. The main task management interface will load with three tabs:
+   - **Table View** (Vista de Tabla): Traditional task list and management
+   - **Kanban Board** (Tablero Kanban): Visual board with drag-and-drop task management
    - **Analytics** (Analíticas): Dashboard with statistics and visualizations
 
 ![Main Interface](todos/screenshot-04.png)
@@ -189,6 +193,245 @@ Control how many tasks display per page:
 3. Use the arrow buttons to navigate between pages
 4. Current page number is displayed in the center
 
+## Kanban Board View
+
+The Kanban Board provides a visual, column-based interface for managing tasks using drag-and-drop interactions. This view is ideal for teams that prefer visual workflow management and want to quickly move tasks between different stages.
+
+![Kanban Board](todos/screenshot-01.png)
+
+### Accessing the Kanban Board
+
+1. Navigate to the Task Management plugin
+2. Click the **"Kanban Board"** (Tablero Kanban) tab
+3. The board will load with all tasks organized by status
+
+### Board Structure
+
+The Kanban board is organized into four columns representing task statuses:
+
+#### Column Overview
+
+1. **Planned** (Planificado)
+   - Tasks that are scheduled but not yet started
+   - Blue color scheme
+   - Shows count in column header: "Planned (X)"
+
+2. **In Progress** (En progreso)
+   - Tasks currently being worked on
+   - Gray color scheme
+   - Shows count in column header: "In progress (X)"
+   - Displays empty state message when no tasks are in progress
+
+3. **Done** (Completado)
+   - Completed tasks
+   - Green/teal color scheme
+   - Shows count in column header: "Done (X)"
+
+4. **Error** (Error)
+   - Tasks that encountered problems or failed
+   - Red color scheme
+   - Shows count in column header: "Error (X)"
+
+Each column displays the total number of tasks in that status in the column header.
+
+### Task Cards
+
+Each task is represented as a card containing key information:
+
+#### Card Information Display
+
+**Task Title**
+- Displayed prominently at the top of the card
+- Brief hamburger menu icon (≡) indicates draggable card
+
+**Priority Badge**
+- Color-coded badge showing task priority:
+  - **Yellow/Orange**: High priority
+  - **Red**: Critical priority
+  - **Blue**: Medium priority
+  - **Gray**: Low priority
+
+**Severity Badge**
+- Color-coded badge showing task severity:
+  - **Red**: Critical severity
+  - **Orange**: High severity
+  - **Blue**: Medium severity
+  - **Gray**: Low severity
+
+**Tags**
+- Displayed as inline badges
+- Multiple tags shown when applicable
+- Examples: "test", "urgent", "review-needed"
+
+**Assignee Information**
+- Shows who is responsible for the task
+- Displayed with user icon (👤)
+- Format: "👤 [assignee name]"
+
+**Due Date**
+- Displayed with calendar icon (📅)
+- Format: "📅 MMM DD, YYYY" (e.g., "Dec 11, 2025")
+- **Overdue tasks** are highlighted in red with "(Vencido)" label
+- Example: "📅 Dec 11, 2025 (Vencido)"
+
+**Task Description** (if available)
+- Brief preview shown below the title
+- Provides context at a glance
+
+#### Card Actions
+
+Each card includes action icons:
+
+1. **Edit Icon** (pencil/✏️)
+   - Located in the top-right corner of the card
+   - Click to open the edit form with pre-filled values
+   - Allows updating all task fields
+
+2. **Delete Icon** (trash/🗑️)
+   - Located next to the edit icon
+   - Click to delete the task
+   - Shows confirmation dialog before deletion
+
+### Drag-and-Drop Functionality
+
+The Kanban board supports drag-and-drop task management:
+
+#### Moving Tasks Between Columns
+
+1. **Click and hold** on a task card (on the hamburger menu icon or card body)
+2. **Drag** the card to the desired column
+3. **Drop** the card in the target column
+4. The task status automatically updates to match the new column
+
+**Status Mapping**:
+- Drop in "Planned" → Task status becomes "planned"
+- Drop in "In Progress" → Task status becomes "in_progress"
+- Drop in "Done" → Task status becomes "done"
+- Drop in "Error" → Task status becomes "error"
+
+**Real-time Updates**:
+- Column counts update immediately after moving a task
+- Task is persisted to OpenSearch with the new status
+- Changes are reflected across all views (Table, Kanban, Analytics)
+
+#### Visual Feedback
+
+During drag operations:
+- Card becomes semi-transparent while dragging
+- Target column highlights when hovering
+- Smooth animation when dropping the card
+
+### Empty State
+
+When a column has no tasks, an empty state is displayed:
+
+**Empty State Features**:
+- Icon indicating empty column (document/list icon)
+- Message: "No hay tareas in progress" (No tasks in progress)
+- Helpful text: "Arrastre tareas aquí o cree nuevas" (Drag tasks here or create new ones)
+
+This guides users to either:
+- Drag tasks from other columns
+- Create new tasks with that status
+
+### Search and Filters Integration
+
+The Kanban board respects all active filters and search queries from the top bar:
+
+**Available Filters**:
+1. **Search Bar**: Filter tasks by title or description
+2. **Status Filter** (Estado): Show only selected statuses
+3. **Priority Filter** (Prioridad): Filter by priority levels
+4. **Severity Filter** (Severidad): Filter by severity levels
+5. **Tags Filter**: Filter by specific tags (comma-separated)
+6. **Overdue Only**: Show only overdue tasks
+
+**Filter Behavior**:
+- Active filters are indicated by count badges next to filter dropdowns
+- Filtered tasks appear only in their respective columns
+- Drag-and-drop still works on filtered views
+- "Clear All" (Limpiar todo) button resets all filters
+
+### Use Cases and Workflows
+
+#### Daily Standup Workflow
+1. Open Kanban Board view
+2. Review "In Progress" column to see active work
+3. Drag completed tasks to "Done" column
+4. Move planned tasks to "In Progress" as team starts work
+5. Identify blocked tasks and move to "Error" if needed
+
+#### Sprint Planning
+1. Filter by assignee to see individual workload
+2. Drag high-priority tasks from "Planned" to "In Progress"
+3. Balance work across team members
+4. Use empty state to identify capacity
+
+#### Incident Response
+1. Create urgent task (appears in "Planned")
+2. Immediately drag to "In Progress" when responder starts work
+3. Move to "Done" when resolved, or "Error" if escalation needed
+4. Use tags to track incident ID
+
+#### Visual Progress Tracking
+1. Use column counts to see distribution at a glance
+2. Identify bottlenecks (too many tasks in one column)
+3. Celebrate progress (watching "Done" column grow)
+4. Address problems (investigate "Error" column tasks)
+
+### Kanban Board vs Table View
+
+**When to Use Kanban Board**:
+- Visual workflow management
+- Quick status updates via drag-and-drop
+- Team collaboration and daily standups
+- Identifying workflow bottlenecks
+- Managing active work in progress
+
+**When to Use Table View**:
+- Detailed task information review
+- Bulk operations on multiple tasks
+- Sorting by various fields (created date, updated date, etc.)
+- Viewing all task metadata in columns
+- Exporting or analyzing task data
+
+**Both views**:
+- Share the same underlying data
+- Update in real-time
+- Support the same search and filtering capabilities
+- Allow task editing and deletion
+
+### Tips for Effective Kanban Usage
+
+1. **Limit Work in Progress**: Keep "In Progress" column manageable (5-10 tasks max)
+
+2. **Review "Error" Column Daily**: Address blocked or failed tasks promptly
+
+3. **Use Visual Cues**: Priority and severity badges help identify urgent tasks at a glance
+
+4. **Leverage Overdue Indicators**: Red due dates signal tasks needing immediate attention
+
+5. **Combine with Filters**: Use status filters to focus on specific workflow stages
+
+6. **Regular Cleanup**: Move completed tasks to "Done" to maintain clear board state
+
+7. **Tag Consistency**: Use consistent tags to make filtering more effective
+
+8. **Assignee Visibility**: Clearly see workload distribution across team members
+
+### Keyboard and Accessibility
+
+**Mouse Interactions**:
+- Click and drag cards to move between columns
+- Click edit icon to modify task details
+- Click delete icon to remove tasks
+
+**Accessibility Features**:
+- High contrast color coding for status columns
+- Clear visual hierarchy with badges and icons
+- Readable fonts and spacing
+- Color-blind friendly status indicators (icons + colors)
+
 ## Search and Filtering
 
 ### Full-Text Search
@@ -205,7 +448,7 @@ The search bar provides fuzzy matching across task titles and descriptions:
 - Search "CVE" finds all tasks mentioning CVE identifiers
 - Search "network security" finds tasks containing both terms
 
-![Search Example](todos/screenshot-08.png)
+![Search Example](todos/screenshot-04.png)
 
 ### Filter by Status
 
@@ -495,7 +738,8 @@ All user-facing text, including field labels, button text, and help messages, is
 3. Assign to incident responder
 4. Set due date based on SLA
 5. Link to compliance framework if applicable
-6. Update status to Done when resolved
+6. **Kanban**: Drag from "Planned" to "In Progress" when responder starts work
+7. Update status to Done when resolved (or drag to "Done" column)
 
 **Vulnerability Management**:
 1. Create task per CVE or vulnerability
@@ -503,15 +747,25 @@ All user-facing text, including field labels, button text, and help messages, is
 3. Priority based on CVSS score
 4. Severity based on business impact
 5. Track compliance framework requirements (PCI, ISO)
-6. Use filters to prioritize patching efforts
+6. **Kanban**: Use visual board to prioritize patching by dragging high-severity tasks first
+7. Use filters to prioritize patching efforts
 
 **Compliance Audit Preparation**:
 1. Create tasks for each control requirement
 2. Link to appropriate framework (PCI, ISO, SOC2)
 3. Assign to control owners
 4. Set due dates before audit
-5. Use Analytics to monitor completion by framework
-6. Filter by framework to generate audit evidence
+5. **Kanban**: Use board view during daily standups to track progress visually
+6. Use Analytics to monitor completion by framework
+7. Filter by framework to generate audit evidence
+
+**Kanban Daily Standup Workflow**:
+1. Open Kanban Board view at start of day
+2. Review "In Progress" column with the team
+3. Drag completed tasks to "Done" as team members report completion
+4. Move new tasks from "Planned" to "In Progress" as work begins
+5. Identify and discuss any tasks in "Error" column
+6. Use overdue indicators to highlight urgent items
 
 ## Keyboard Shortcuts
 
@@ -612,6 +866,62 @@ While the plugin primarily uses mouse interaction, these keyboard shortcuts impr
 - Verify task status is Planned or Error
 - Check due date is in the past
 - Ensure due date field is filled in
+
+### Kanban Board Issues
+
+#### Drag-and-Drop Not Working
+
+**Possible Causes**:
+1. Browser compatibility issue
+2. Card is being clicked instead of dragged
+3. JavaScript error in browser console
+
+**Solutions**:
+- Use a modern browser (Chrome, Firefox, Edge, Safari)
+- Click and hold for 1 second before dragging
+- Check browser console for errors (F12)
+- Refresh the page
+- Try using the edit button to change status instead
+
+#### Task Not Moving Between Columns
+
+**Possible Causes**:
+1. Drop was not completed properly
+2. Network connection issue
+3. OpenSearch backend error
+
+**Solutions**:
+- Ensure you drop the card fully inside the target column
+- Check network connection
+- Refresh the page to see if status updated
+- Use Table View to manually update status
+- Check browser console for error messages
+
+#### Column Counts Not Updating
+
+**Possible Causes**:
+1. Page needs refresh
+2. Active filters affecting display
+3. Caching issue
+
+**Solutions**:
+- Refresh the page (F5)
+- Clear all filters and check counts
+- Navigate to Table View and back to Kanban
+- Clear browser cache
+
+#### Cards Not Displaying All Information
+
+**Possible Causes**:
+1. Data missing from task record
+2. Display resolution too low
+3. Browser zoom level
+
+**Solutions**:
+- Edit the task to add missing fields
+- Increase browser window size
+- Reset browser zoom to 100% (Ctrl+0 or Cmd+0)
+- Check task in Table View to see all data
 
 ## Support and Feedback
 

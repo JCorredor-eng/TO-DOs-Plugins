@@ -1,0 +1,6 @@
+# Ignore generated TypeDoc output
+typedoc/*
+!typedoc/index.html
+
+# Keep the placeholder index.html but ignore everything else in typedoc/
+# This ensures users know they need to generate docs but we don't commit generated files

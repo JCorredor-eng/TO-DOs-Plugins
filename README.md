@@ -21,8 +21,9 @@ This plugin provides a comprehensive task management system designed for OpenSea
 The plugin demonstrates best practices for OpenSearch Dashboards plugin development including:
 
 - **5-Layer Backend Architecture**: Strict separation between Routes → Controllers → Services → Repositories → Mappers
-- **Presentational Component Pattern**: Frontend components are pure presentation with zero business logic (PROJECT RULE #11)
-- **Custom Hooks Architecture**: 12 custom React hooks containing all business logic, state management, and API calls
+- **Presentational Component Pattern**: Frontend components are pure presentation with zero business logic
+- **Custom Hooks Architecture**: 14 custom React hooks containing all business logic, state management, and API calls
+- **Kanban Board View**: Drag-and-drop task management with visual workflow columns
 - **Type Safety**: Full TypeScript implementation with strict type checking
 - **Data Validation**: Input validation at all boundaries using `@osd/config-schema`
 - **DTO Pattern**: Well-defined API contracts between frontend and backend
@@ -37,6 +38,8 @@ The plugin demonstrates best practices for OpenSearch Dashboards plugin developm
 ### Core Functionality
 
 - **Full CRUD Operations**: Create, read, update, and delete TODO items with rich metadata
+- **Kanban Board View**: Visual workflow management with drag-and-drop status transitions across 3 columns (Planned, Done, Error)
+- **Table View**: Traditional table view with advanced filtering, sorting, and pagination
 - **Advanced Search**: Full-text search across titles and descriptions with fuzzy matching
 - **Multi-Filter Support**: Filter by status, tags, assignee, priority, severity, compliance frameworks
 - **Date Range Filtering**: Prominent date range picker in top navigation bar (TopNavMenu) with quick select options and "Last 7 days" default
@@ -58,12 +61,15 @@ The plugin demonstrates best practices for OpenSearch Dashboards plugin developm
 
 ### Data Visualization
 
-- **Status Distribution Chart**: Visual breakdown of tasks by status
-- **Top Tags Analytics**: Most frequently used tags with counts
-- **Completion Timeline**: Time-series chart showing completed tasks over time
-- **Real-Time Statistics**: Aggregated metrics updated on every operation
-- **Priority/Severity Badges**: Color-coded visual indicators in table view
-- **Overdue Highlights**: Visual warnings for tasks past their due date
+- **3-Tab Interface**: Switch between Table View, Kanban View, and Analytics View
+- **Kanban Cards**: Rich card display with title, description, priority/severity badges, tags, assignee, and due date
+- **Drag-and-Drop**: Intuitive status changes by dragging cards between columns
+- **Status Distribution Chart**: Progress bars showing task distribution with percentages and colors
+- **Top Tags Analytics**: Horizontal bar chart of most frequently used tags with percentages
+- **Assignee Distribution Chart**: Bar chart showing task distribution by assignee
+- **Real-Time Statistics**: Summary cards showing total, planned, done, and error counts
+- **Priority/Severity Badges**: Color-coded visual indicators throughout the UI
+- **Overdue Highlights**: Red indicators for tasks past their due date in both table and kanban views
 
 ### Data Persistence
 
@@ -183,13 +189,12 @@ Comprehensive documentation is available in the `docs/` directory:
 ### Core Documentation
 
 - **[User Guide](docs/user-guide.md)**: Complete user manual with step-by-step instructions, screenshots, and best practices for using the task management plugin
-- **[Architecture Guide](docs/architecture.md)**: Comprehensive system architecture including the new presentational component pattern (PROJECT RULE #11), 5-layer backend architecture, 12 custom hooks, data flow diagrams, and design patterns
+- **[Architecture Guide](docs/architecture.md)**: Comprehensive system architecture including the presentational component pattern, 5-layer backend architecture, 14 custom hooks, 18 UI components, data flow diagrams, and design patterns
 - **[Features Documentation](docs/features.md)**: Complete feature catalog with 50+ implemented features, user workflows, API endpoints, data models, and technical constraints
 
 ### Additional Resources
 
 - **[CLAUDE.md](CLAUDE.md)**: Developer guidance for working with this project and Claude Code integration
-- **[PROJECT_RULES.md](PROJECT_RULES.md)**: Architecture rules and constraints that must be followed
 
 ## Technology Stack
 
@@ -272,12 +277,14 @@ dev_environment/
 │   │       ├── index.ts
 │   │       ├── api/
 │   │       │   └── todos.client.ts          # HTTP client
-│   │       ├── hooks/                       # Custom React hooks (12 hooks)
+│   │       ├── hooks/                       # Custom React hooks (14 hooks)
 │   │       │   ├── use_todos_page.ts        # Page orchestrator
 │   │       │   ├── use_todos_table.ts       # Table delete modal logic
 │   │       │   ├── use_todo_filters.ts      # Filter state management
 │   │       │   ├── use_todo_form.ts         # Form state & validation
 │   │       │   ├── use_compliance_dashboard.ts  # Framework selection
+│   │       │   ├── use_kanban_board.ts      # Kanban drag-drop logic
+│   │       │   ├── use_todos_stats_dashboard.ts # Stats data transformation
 │   │       │   ├── use_todos.ts             # Fetch todos data
 │   │       │   ├── use_create_todo.ts       # Create operation
 │   │       │   ├── use_update_todo.ts       # Update operation
@@ -286,16 +293,24 @@ dev_environment/
 │   │       │   ├── use_todo_analytics.ts    # Analytics fetching
 │   │       │   └── use_todo_suggestions.ts  # Autocomplete suggestions
 │   │       ├── ui/                          # Presentational components
-│   │       │   ├── TodosPage.tsx            # Main page layout
+│   │       │   ├── TodosPage.tsx            # Main page (3 tabs)
 │   │       │   ├── TodosTable.tsx           # TODO table
 │   │       │   ├── TodoFilters.tsx          # Advanced filters
 │   │       │   ├── TodoForm.tsx             # Create/Edit form
+│   │       │   ├── KanbanBoard.tsx          # Kanban board view
 │   │       │   ├── TodosStatsDashboard.tsx  # General statistics
 │   │       │   ├── ComplianceDashboard.tsx  # Compliance analytics
 │   │       │   ├── ComplianceFrameworkChart.tsx
 │   │       │   ├── PrioritySeverityHeatmap.tsx
 │   │       │   ├── HighCriticalTasksChart.tsx
-│   │       │   └── OverdueTasksTable.tsx
+│   │       │   ├── OverdueTasksTable.tsx
+│   │       │   └── components/              # Reusable chart components
+│   │       │       ├── KanbanCard.tsx       # Draggable TODO card
+│   │       │       ├── KanbanColumn.tsx     # Droppable column
+│   │       │       ├── StatsSummaryCards.tsx
+│   │       │       ├── StatusDistributionChart.tsx
+│   │       │       ├── TopTagsChart.tsx
+│   │       │       └── AssigneeDistributionChart.tsx
 │   │       └── __tests__/                   # Frontend tests (6 suites)
 │   │           ├── setup.ts
 │   │           ├── TodosPage.test.tsx

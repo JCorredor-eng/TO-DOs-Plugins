@@ -45,6 +45,7 @@ describe('TodoForm', () => {
         suggestedFrameworks: [],
         statusOptions: [
           { value: 'planned', text: 'Planned' },
+          { value: 'in_progress', text: 'In Progress' },
           { value: 'done', text: 'Done' },
           { value: 'error', text: 'Error' },
         ],
@@ -189,6 +190,7 @@ describe('TodoForm', () => {
           suggestedFrameworks: [],
           statusOptions: [
             { value: 'planned', text: 'Planned' },
+            { value: 'in_progress', text: 'In Progress' },
             { value: 'done', text: 'Done' },
             { value: 'error', text: 'Error' },
           ],
@@ -300,6 +302,7 @@ describe('TodoForm', () => {
           suggestedFrameworks: [],
           statusOptions: [
             { value: 'planned', text: 'Planned' },
+            { value: 'in_progress', text: 'In Progress' },
             { value: 'done', text: 'Done' },
             { value: 'error', text: 'Error' },
           ],
@@ -442,6 +445,7 @@ describe('TodoForm', () => {
       const statusSelect = screen.getByLabelText(/status/i);
       expect(statusSelect).toBeInTheDocument();
       expect(screen.getByText('Planned')).toBeInTheDocument();
+      expect(screen.getByText('In Progress')).toBeInTheDocument();
       expect(screen.getByText('Done')).toBeInTheDocument();
       expect(screen.getByText('Error')).toBeInTheDocument();
     });

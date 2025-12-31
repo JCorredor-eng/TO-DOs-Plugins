@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+// @ts-ignore - jest-dom types are loaded globally
 import '@testing-library/jest-dom';
 import { TodosStatsDashboard } from '../ui/TodosStatsDashboard';
 import { TodoStats } from '../../../../common/todo/todo.types';
@@ -7,7 +8,8 @@ describe('TodosStatsDashboard', () => {
   const mockStats: TodoStats = {
     total: 100,
     byStatus: {
-      planned: 50,
+      planned: 40,
+      in_progress: 10,
       done: 40,
       error: 10,
     },
@@ -73,7 +75,7 @@ describe('TodosStatsDashboard', () => {
     it('should show empty state when total is zero', () => {
       const emptyStats: TodoStats = {
         total: 0,
-        byStatus: { planned: 0, done: 0, error: 0 },
+        byStatus: { planned: 0, in_progress: 0, done: 0, error: 0 },
         topTags: [],
         completedOverTime: [],
         topAssignees: [],
@@ -137,17 +139,17 @@ describe('TodosStatsDashboard', () => {
     });
     it('should calculate correct percentages', () => {
       render(<TodosStatsDashboard {...defaultProps} />);
-      const fiftyPercent = screen.getAllByText(/\(50%\)/);
-      expect(fiftyPercent.length).toBeGreaterThan(0);
+      // With planned=40, in_progress=10, done=40, error=10 (total=100)
+      // Expected percentages: 40%, 10%, 40%, 10%
       const fortyPercent = screen.getAllByText(/\(40%\)/);
-      expect(fortyPercent.length).toBeGreaterThan(0);
+      expect(fortyPercent.length).toBeGreaterThanOrEqual(2); // planned and done
       const tenPercent = screen.getAllByText(/\(10%\)/);
-      expect(tenPercent.length).toBeGreaterThan(0);
+      expect(tenPercent.length).toBeGreaterThanOrEqual(2); // in_progress, error (and possibly audit tag)
     });
     it('should handle zero total without crashing', () => {
       const zeroStats: TodoStats = {
         total: 0,
-        byStatus: { planned: 0, done: 0, error: 0 },
+        byStatus: { planned: 0, in_progress: 0, done: 0, error: 0 },
         topTags: [],
         completedOverTime: [],
         topAssignees: [],
@@ -191,7 +193,7 @@ describe('TodosStatsDashboard', () => {
       expect(screen.queryByText('Top Tags')).not.toBeInTheDocument();
     });
     it('should render tag progress bars', () => {
-      const { container } = render(<TodosStatsDashboard {...defaultProps} />);
+      render(<TodosStatsDashboard {...defaultProps} />);
       expect(screen.getByText('Top Tags')).toBeInTheDocument();
       expect(screen.getByText('pci-dss')).toBeInTheDocument();
     });
@@ -228,7 +230,7 @@ describe('TodosStatsDashboard', () => {
     it('should handle stats with all zeros', () => {
       const allZeroStats: TodoStats = {
         total: 100,
-        byStatus: { planned: 0, done: 0, error: 0 },
+        byStatus: { planned: 0, in_progress: 0, done: 0, error: 0 },
         topTags: [],
         completedOverTime: [],
         topAssignees: [],
@@ -242,7 +244,7 @@ describe('TodosStatsDashboard', () => {
     it('should handle very large numbers', () => {
       const largeStats: TodoStats = {
         total: 999999,
-        byStatus: { planned: 333333, done: 333333, error: 333333 },
+        byStatus: { planned: 333333, in_progress: 0, done: 333333, error: 333333 },
         topTags: [{ tag: 'large', count: 999999 }],
         completedOverTime: [],
         topAssignees: [],
@@ -254,7 +256,7 @@ describe('TodosStatsDashboard', () => {
     it('should handle stats with only one status populated', () => {
       const oneStatusStats: TodoStats = {
         total: 50,
-        byStatus: { planned: 50, done: 0, error: 0 },
+        byStatus: { planned: 50, in_progress: 0, done: 0, error: 0 },
         topTags: [],
         completedOverTime: [],
         topAssignees: [],
@@ -271,7 +273,7 @@ describe('TodosStatsDashboard', () => {
     it('should round percentages correctly', () => {
       const oddStats: TodoStats = {
         total: 3,
-        byStatus: { planned: 1, done: 1, error: 1 },
+        byStatus: { planned: 1, in_progress: 0, done: 1, error: 1 },
         topTags: [{ tag: 'tag1', count: 1 }],
         completedOverTime: [],
         topAssignees: [],
@@ -328,7 +330,7 @@ describe('TodosStatsDashboard', () => {
     it('should maintain layout with minimal data', () => {
       const minimalStats: TodoStats = {
         total: 1,
-        byStatus: { planned: 1, done: 0, error: 0 },
+        byStatus: { planned: 1, in_progress: 0, done: 0, error: 0 },
         topTags: [{ tag: 'single', count: 1 }],
         completedOverTime: [{ date: '2024-01-01', count: 1 }],
         topAssignees: [],

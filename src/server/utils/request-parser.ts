@@ -109,31 +109,45 @@ export class RequestParser {
     return 1;
   }
 
-  private parseStatus(value: unknown): TodoStatus | TodoStatus[] | undefined {
+  /**
+   * Generic enum parser that handles single values, comma-separated strings, and arrays.
+   *
+   * @param value - Value to parse
+   * @param validValues - Array of valid enum values
+   * @param allowMultiple - Whether to allow multiple values (arrays/comma-separated)
+   * @returns Parsed enum value(s) or undefined if invalid
+   */
+  private parseEnum<T extends string>(
+    value: unknown,
+    validValues: readonly T[],
+    allowMultiple: boolean = true
+  ): T | T[] | undefined {
     if (typeof value === 'string') {
-      if (value.includes(',')) {
+      if (allowMultiple && value.includes(',')) {
         return value
           .split(',')
           .map((s) => s.trim())
-          .filter((s): s is TodoStatus => ['planned', 'done', 'error'].includes(s));
+          .filter((s): s is T => validValues.includes(s as T));
       }
-      if (['planned', 'done', 'error'].includes(value)) {
-        return value as TodoStatus;
+      if (validValues.includes(value as T)) {
+        return value as T;
       }
     }
-    if (Array.isArray(value)) {
-      return value.filter((s): s is TodoStatus =>
-        typeof s === 'string' && ['planned', 'done', 'error'].includes(s)
+    if (Array.isArray(value) && allowMultiple) {
+      return value.filter((s): s is T =>
+        typeof s === 'string' && validValues.includes(s as T)
       );
     }
     return undefined;
   }
 
+  private parseStatus(value: unknown): TodoStatus | TodoStatus[] | undefined {
+    return this.parseEnum<TodoStatus>(value, ['planned', 'in_progress', 'done', 'error'], true);
+  }
+
   private parseOptionalStatus(value: unknown): TodoStatus | undefined {
-    if (typeof value === 'string' && ['planned', 'done', 'error'].includes(value)) {
-      return value as TodoStatus;
-    }
-    return undefined;
+    const result = this.parseEnum<TodoStatus>(value, ['planned', 'in_progress', 'done', 'error'], false);
+    return Array.isArray(result) ? result[0] : result;
   }
 
   private parseTags(value: unknown): readonly string[] | undefined {
@@ -178,61 +192,21 @@ export class RequestParser {
   }
 
   private parsePriority(value: unknown): TodoPriority | TodoPriority[] | undefined {
-    const validPriorities: TodoPriority[] = ['low', 'medium', 'high', 'critical'];
-    if (typeof value === 'string') {
-      if (value.includes(',')) {
-        return value
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s): s is TodoPriority => validPriorities.includes(s as TodoPriority));
-      }
-      if (validPriorities.includes(value as TodoPriority)) {
-        return value as TodoPriority;
-      }
-    }
-    if (Array.isArray(value)) {
-      return value.filter((s): s is TodoPriority =>
-        typeof s === 'string' && validPriorities.includes(s as TodoPriority)
-      );
-    }
-    return undefined;
+    return this.parseEnum<TodoPriority>(value, ['low', 'medium', 'high', 'critical'], true);
   }
 
   private parseOptionalPriority(value: unknown): TodoPriority | undefined {
-    const validPriorities: TodoPriority[] = ['low', 'medium', 'high', 'critical'];
-    if (typeof value === 'string' && validPriorities.includes(value as TodoPriority)) {
-      return value as TodoPriority;
-    }
-    return undefined;
+    const result = this.parseEnum<TodoPriority>(value, ['low', 'medium', 'high', 'critical'], false);
+    return Array.isArray(result) ? result[0] : result;
   }
 
   private parseSeverity(value: unknown): TodoSeverity | TodoSeverity[] | undefined {
-    const validSeverities: TodoSeverity[] = ['info', 'low', 'medium', 'high', 'critical'];
-    if (typeof value === 'string') {
-      if (value.includes(',')) {
-        return value
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s): s is TodoSeverity => validSeverities.includes(s as TodoSeverity));
-      }
-      if (validSeverities.includes(value as TodoSeverity)) {
-        return value as TodoSeverity;
-      }
-    }
-    if (Array.isArray(value)) {
-      return value.filter((s): s is TodoSeverity =>
-        typeof s === 'string' && validSeverities.includes(s as TodoSeverity)
-      );
-    }
-    return undefined;
+    return this.parseEnum<TodoSeverity>(value, ['info', 'low', 'medium', 'high', 'critical'], true);
   }
 
   private parseOptionalSeverity(value: unknown): TodoSeverity | undefined {
-    const validSeverities: TodoSeverity[] = ['info', 'low', 'medium', 'high', 'critical'];
-    if (typeof value === 'string' && validSeverities.includes(value as TodoSeverity)) {
-      return value as TodoSeverity;
-    }
-    return undefined;
+    const result = this.parseEnum<TodoSeverity>(value, ['info', 'low', 'medium', 'high', 'critical'], false);
+    return Array.isArray(result) ? result[0] : result;
   }
 
   private parseComplianceFrameworks(value: unknown): readonly string[] | undefined {

@@ -19,10 +19,11 @@ The TODO Management Plugin provides a comprehensive task management system with 
 ### Primary Use Cases
 
 1. **Task Management**: Create, organize, and track TODO items with rich metadata
-2. **Compliance Tracking**: Associate tasks with regulatory frameworks (PCI-DSS, ISO-27001, HIPAA, etc.)
-3. **Priority Management**: Classify tasks by urgency and impact for risk-based workflows
-4. **Team Collaboration**: Assign tasks to team members and track completion
-5. **Analytics**: Visualize task distribution, overdue items, and compliance coverage
+2. **Visual Workflow Management**: Kanban board with drag-and-drop for intuitive status transitions
+3. **Compliance Tracking**: Associate tasks with regulatory frameworks (PCI-DSS, ISO-27001, HIPAA, etc.)
+4. **Priority Management**: Classify tasks by urgency and impact for risk-based workflows
+5. **Team Collaboration**: Assign tasks to team members and track completion
+6. **Analytics**: Visualize task distribution, overdue items, and compliance coverage
 
 ## Feature Catalog
 
@@ -41,7 +42,7 @@ The TODO Management Plugin provides a comprehensive task management system with 
 | Feature | Description | Status |
 |---------|-------------|--------|
 | **Full-Text Search** | Search across title and description fields with fuzzy matching | ✅ Implemented |
-| **Status Filter** | Filter by status (planned, done, error) with multi-select | ✅ Implemented |
+| **Status Filter** | Filter by status (planned, in_progress, done, error) with multi-select | ✅ Implemented |
 | **Tag Filter** | Filter by tags (AND logic - must have all specified tags) | ✅ Implemented |
 | **Priority Filter** | Filter by priority levels (low, medium, high, critical) | ✅ Implemented |
 | **Severity Filter** | Filter by severity levels (info, low, medium, high, critical) | ✅ Implemented |
@@ -66,7 +67,7 @@ The TODO Management Plugin provides a comprehensive task management system with 
 
 | Feature | Description | Status |
 |---------|-------------|--------|
-| **General Statistics** | Total, planned, done, error counts | ✅ Implemented |
+| **General Statistics** | Total, planned, in-progress, done, error counts | ✅ Implemented |
 | **Status Distribution** | Visual breakdown with progress bars | ✅ Implemented |
 | **Top Tags Chart** | Bar chart showing most used tags | ✅ Implemented |
 | **Compliance Framework Coverage** | Tasks per compliance framework | ✅ Implemented |
@@ -74,6 +75,20 @@ The TODO Management Plugin provides a comprehensive task management system with 
 | **Overdue Tasks Table** | List of tasks past their due date | ✅ Implemented |
 | **High/Critical Tasks Chart** | Distribution of high-priority and critical tasks | ✅ Implemented |
 | **Framework Filter** | Filter analytics by specific compliance framework | ✅ Implemented |
+
+### Kanban Board View
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **3-Column Layout** | Visual kanban board with Planned, Done, Error columns | ✅ Implemented |
+| **Drag-and-Drop** | Drag TODO cards between columns to update status | ✅ Implemented |
+| **Card Display** | Rich card view with title, description, priority, severity, tags, assignee, due date | ✅ Implemented |
+| **Status Transitions** | Change status by dragging cards to different columns | ✅ Implemented |
+| **Overdue Highlighting** | Overdue tasks show red due date indicator | ✅ Implemented |
+| **Tag Display** | Shows first 3 tags + overflow count (e.g., "+5") | ✅ Implemented |
+| **Inline Actions** | Edit/delete buttons on each card | ✅ Implemented |
+| **Empty State** | Each column shows helpful empty state when no tasks | ✅ Implemented |
+| **Responsive Layout** | Minimum column width of 320px with horizontal scroll | ✅ Implemented |
 
 ### Internationalization
 
@@ -92,7 +107,7 @@ The TODO Management Plugin provides a comprehensive task management system with 
 
 **Required Fields**:
 - `title` (string, max 256 characters)
-- `status` (enum: planned, done, error)
+- `status` (enum: planned, in_progress, done, error)
 
 **Optional Fields**:
 - `description` (string, max 4000 characters)
@@ -178,7 +193,7 @@ The TODO Management Plugin provides a comprehensive task management system with 
 | `page` | number | 1 | Page number (1-indexed) |
 | `pageSize` | number | 20 | Items per page (1-100) |
 | `searchText` | string | - | Full-text search query |
-| `status` | array | - | Filter by status (planned, done, error) |
+| `status` | array | - | Filter by status (planned, in_progress, done, error) |
 | `tags` | array | - | Filter by tags (AND logic) |
 | `priority` | array | - | Filter by priority |
 | `severity` | array | - | Filter by severity |
@@ -244,7 +259,7 @@ The TODO Management Plugin provides a comprehensive task management system with 
 **Allowed Fields**:
 - `title` (string, max 256 characters)
 - `description` (string, max 4000 characters)
-- `status` (enum: planned, done, error)
+- `status` (enum: planned, in_progress, done, error)
 - `tags` (array of strings, max 20 tags)
 - `assignee` (string, max 100 characters)
 - `priority` (enum: low, medium, high, critical)
@@ -305,7 +320,7 @@ The TODO Management Plugin provides a comprehensive task management system with 
 
 **Display Format**:
 - **Title & Description**: Title in bold, description in subdued color
-- **Status Badge**: Color-coded badge (planned=default, done=success, error=danger)
+- **Status Badge**: Color-coded badge (planned=primary, in_progress=warning, done=success, error=danger)
 - **Tags**: Up to 3 visible tags as badges, "+N" for remaining
 - **Assignee**: Username or "-" if not assigned
 - **Timestamps**: Relative time (e.g., "2 hours ago", "3 days ago")
@@ -547,16 +562,18 @@ export interface Todo {
 **TodoStatus**:
 
 ```typescript
-export type TodoStatus = 'planned' | 'done' | 'error';
+export type TodoStatus = 'planned' | 'in_progress' | 'done' | 'error';
 
 export const TODO_STATUS_LABELS = {
   planned: 'Planned',
+  in_progress: 'In Progress',
   done: 'Done',
   error: 'Error',
 };
 
 export const TODO_STATUS_COLORS = {
-  planned: 'default',
+  planned: 'primary',
+  in_progress: 'warning',
   done: 'success',
   error: 'danger',
 };
@@ -830,6 +847,67 @@ export interface AnalyticsStats {
    - Click "Save Changes"
 
 **Note**: Bulk update is not implemented; requires individual updates.
+
+### Workflow 5: Manage Tasks with Kanban Board
+
+**Scenario**: Team lead wants to visualize task status and quickly move tasks through workflow stages.
+
+**Steps**:
+
+1. **View Kanban Board**:
+   - Navigate to "Kanban View" tab
+   - Board displays 3 columns: Planned, Done, Error
+   - Each column shows count of tasks (e.g., "Planned (12)")
+
+2. **Review Task Details**:
+   - Each card displays:
+     - Title and description (truncated)
+     - Priority and severity badges (color-coded)
+     - First 3 tags (with "+N" for overflow)
+     - Assignee icon and name
+     - Due date (red if overdue)
+     - Edit and delete action buttons
+
+3. **Move Task to Different Status** (Drag-and-Drop):
+   - Hover over a card in "Planned" column
+   - Click and hold the drag handle (grab icon) at top-left
+   - Drag card to "Done" column
+   - Release to drop
+   - Backend automatically updates status to "done"
+   - `completedAt` timestamp automatically set
+   - Success notification appears
+   - Card remains in "Done" column
+
+4. **Quick Edit**:
+   - Click edit button (pencil icon) on any card
+   - Modal opens with full form
+   - Make changes (assignee, priority, tags, etc.)
+   - Save changes
+   - Card updates in place
+
+5. **Quick Delete**:
+   - Click delete button (trash icon) on card
+   - Confirmation modal appears
+   - Confirm deletion
+   - Card removed from board
+
+**Kanban Board Features**:
+- **Visual Workflow**: See task distribution across 3 statuses at a glance
+- **Drag-and-Drop**: Intuitive status changes without opening forms
+- **Rich Cards**: All relevant task info visible without clicking
+- **Empty States**: Helpful messages when columns are empty
+- **Responsive**: Horizontal scroll for narrow screens (min 320px per column)
+- **Real-time**: Changes persist immediately to OpenSearch
+
+**Benefits**:
+- Faster status updates than table view (no modal required)
+- Better visual representation of workflow stages
+- Easy to spot bottlenecks (too many tasks in one column)
+- Ideal for daily standups and team meetings
+
+**When to Use Kanban vs. Table**:
+- **Use Kanban** for: Visual workflow management, quick status updates, team collaboration
+- **Use Table** for: Detailed filtering, bulk viewing, sorting by multiple fields
 
 ## API Endpoints
 

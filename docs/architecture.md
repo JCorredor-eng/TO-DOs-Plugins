@@ -25,7 +25,7 @@ The TODO Management Plugin for OpenSearch Dashboards is built with a strict laye
 4. **Type Safety**: Full TypeScript implementation with strict type checking
 5. **Testability**: All layers are independently testable with clear boundaries
 6. **Scalability**: Stateless design allows horizontal scaling
-7. **Presentational Components**: Frontend components are pure presentation with zero business logic (PROJECT RULE #11)
+7. **Presentational Components**: Frontend components are pure presentation with zero business logic 
 
 ## System Architecture
 
@@ -410,7 +410,7 @@ export class HttpErrorMapper {
 
 ## Frontend Architecture
 
-### Presentational Component Pattern (PROJECT RULE #11)
+### Presentational Component Pattern 
 
 The frontend strictly follows the **Presentational Component Pattern** where:
 
@@ -483,7 +483,7 @@ graph TB
 
 ### Custom Hooks Architecture
 
-The frontend uses **12 custom hooks** organized into two categories:
+The frontend uses **14 custom hooks** organized into three categories:
 
 #### Orchestrator Hooks (Complex State Management)
 
@@ -491,14 +491,14 @@ These hooks manage complex UI workflows and compose multiple data hooks:
 
 1. **`useTodosPage`** (`src/public/features/todos/hooks/use_todos_page.ts`)
    - **Responsibility**: Orchestrate the entire TodosPage component
-   - **State**: Tab selection, modal state, filter state, pagination, sorting
+   - **State**: Tab selection (table/analytics/kanban), modal state, filter state, pagination, sorting
    - **Composes**: `useTodos`, `useTodoStats`, `useTodoAnalytics`, `useCreateTodo`, `useUpdateTodo`, `useDeleteTodo`
    - **Returns**: `{ data, uiState, actions }`
 
    ```typescript
    export const useTodosPage = ({ http, notifications }) => {
      // UI State
-     const [selectedTab, setSelectedTab] = useState('table');
+     const [selectedTab, setSelectedTab] = useState<'table' | 'analytics' | 'kanban'>('table');
      const [isFormOpen, setIsFormOpen] = useState(false);
 
      // Filter State
@@ -528,18 +528,18 @@ These hooks manage complex UI workflows and compose multiple data hooks:
    ```
 
 2. **`useTodosTable`** (`src/public/features/todos/hooks/use_todos_table.ts`)
-   - **Responsibility**: Manage delete confirmation modal
+   - **Responsibility**: Manage delete confirmation modal and table pagination/sorting
    - **State**: `todoToDelete`, pagination config, sorting config
    - **Returns**: `{ data, actions }`
 
 3. **`useTodoFilters`** (`src/public/features/todos/hooks/use_todo_filters.ts`)
-   - **Responsibility**: Manage all filter state (8 date ranges, search, status, priority, severity)
+   - **Responsibility**: Manage all filter state (8 date ranges, search, status, priority, severity, overdue)
    - **State**: Popover visibility, local input values, 8 date range fields
    - **Returns**: `{ data, uiState, actions }`
 
 4. **`useTodoForm`** (`src/public/features/todos/hooks/use_todo_form.ts`)
    - **Responsibility**: Manage form state, validation, and submission
-   - **State**: All form fields, validation errors
+   - **State**: All form fields (title, description, status, tags, priority, severity, assignee, dueDate, complianceFrameworks), validation errors
    - **Composes**: `useTodoSuggestions` (for tag/framework autocomplete)
    - **Returns**: `{ data, formState, actions }`
 
@@ -548,17 +548,28 @@ These hooks manage complex UI workflows and compose multiple data hooks:
    - **State**: Selected framework
    - **Returns**: `{ data, actions }`
 
+6. **`useKanbanBoard`** (`src/public/features/todos/hooks/use_kanban_board.ts`)
+   - **Responsibility**: Manage Kanban board business logic (drag-drop, grouping by status)
+   - **State**: `isDragging` flag
+   - **Logic**: Groups todos by status, handles drag-drop status transitions, delegates edit/delete actions
+   - **Returns**: `{ data: { columns }, uiState: { isDragging, hasError, isEmpty }, actions: { handleDragEnd, handleEdit, handleDelete } }`
+
+7. **`useTodosStatsDashboard`** (`src/public/features/todos/hooks/use_todos_stats_dashboard.ts`)
+   - **Responsibility**: Transform stats data for chart components (calculate percentages, map colors)
+   - **Logic**: Pre-computes status distribution, top tags, assignee distribution with percentages and colors
+   - **Returns**: `{ data, uiState, charts: { statusDistribution, topTags, assignees, unassignedItem } }`
+
 #### Data Hooks (API Operations)
 
 These hooks handle API communication and data fetching:
 
-6. **`useTodos`**: Fetch paginated TODO list with filters
-7. **`useCreateTodo`**: Create new TODO
-8. **`useUpdateTodo`**: Update existing TODO
-9. **`useDeleteTodo`**: Delete TODO
-10. **`useTodoStats`**: Fetch general statistics
-11. **`useTodoAnalytics`**: Fetch compliance analytics
-12. **`useTodoSuggestions`**: Fetch tag/framework suggestions
+8. **`useTodos`**: Fetch paginated TODO list with filters
+9. **`useCreateTodo`**: Create new TODO
+10. **`useUpdateTodo`**: Update existing TODO
+11. **`useDeleteTodo`**: Delete TODO
+12. **`useTodoStats`**: Fetch general statistics
+13. **`useTodoAnalytics`**: Fetch compliance analytics
+14. **`useTodoSuggestions`**: Fetch tag/framework suggestions for autocomplete
 
 ### Hook Return Pattern
 
@@ -651,6 +662,123 @@ export class TodosClient {
 ```
 
 **Key Principle**: **Frontend only calls BFF endpoints** (PROJECT RULE #4). No direct OpenSearch access.
+
+### UI Components Catalog
+
+The plugin implements **17 presentational components** organized into pages, features, and reusable chart components:
+
+#### Page Components
+
+1. **TodosPage** (`src/public/features/todos/ui/TodosPage.tsx`)
+   - **Purpose**: Main application page with 3-tab layout
+   - **Tabs**: Table View, Kanban View, Analytics View
+   - **Uses Hook**: `useTodosPage` (orchestrator)
+   - **Key Features**: Tab switching, modal management, filters bar, language selector
+
+#### Feature Components (Table View)
+
+2. **TodosTable** (`src/public/features/todos/ui/TodosTable.tsx`)
+   - **Purpose**: Display todos in a sortable, paginated table
+   - **Uses Hook**: `useTodosTable`
+   - **Features**: Server-side pagination (10/20/50/100 per page), sortable columns, inline actions (edit/delete)
+
+3. **TodoFilters** (`src/public/features/todos/ui/TodoFilters.tsx`)
+   - **Purpose**: Advanced filter panel with search, status, tags, priority, severity, overdue toggle, and date ranges
+   - **Uses Hook**: `useTodoFilters`
+   - **Features**: 8 date range pickers, multi-select popovers, active filter count badge, clear all button
+
+4. **TodoForm** (`src/public/features/todos/ui/TodoForm.tsx`)
+   - **Purpose**: Create/Edit modal form with validation
+   - **Uses Hook**: `useTodoForm`
+   - **Features**: Dynamic title (Create/Edit), field validation with inline errors, tag/framework autocomplete
+
+#### Feature Components (Kanban View)
+
+5. **KanbanBoard** (`src/public/features/todos/ui/KanbanBoard.tsx`)
+   - **Purpose**: 3-column kanban board with drag-and-drop
+   - **Uses Hook**: `useKanbanBoard`
+   - **Features**: Drag-and-drop status transitions using EUI DragDropContext, loading state, empty state per column
+
+6. **KanbanColumn** (`src/public/features/todos/ui/components/KanbanColumn.tsx`)
+   - **Purpose**: Single droppable column in kanban board
+   - **Features**: Column header with count, droppable area (EuiDroppable), empty state message
+
+7. **KanbanCard** (`src/public/features/todos/ui/components/KanbanCard.tsx`)
+   - **Purpose**: Draggable TODO card in kanban column
+   - **Features**: Drag handle, title/description truncation, priority/severity badges, tags (first 3 + overflow count), assignee icon, due date with overdue highlighting, edit/delete buttons
+
+#### Feature Components (Analytics View)
+
+8. **TodosStatsDashboard** (`src/public/features/todos/ui/TodosStatsDashboard.tsx`)
+   - **Purpose**: General statistics dashboard
+   - **Uses Hook**: `useTodosStatsDashboard`
+   - **Features**: Renders 4 chart components with pre-computed data
+
+9. **ComplianceDashboard** (`src/public/features/todos/ui/ComplianceDashboard.tsx`)
+   - **Purpose**: Compliance analytics with framework filtering
+   - **Uses Hook**: `useComplianceDashboard`
+   - **Features**: Framework filter dropdown, multiple analytics charts
+
+10. **ComplianceFrameworkChart** - Framework coverage bar chart
+11. **PrioritySeverityHeatmap** - Priority vs. severity distribution matrix
+12. **HighCriticalTasksChart** - High and critical task distribution
+13. **OverdueTasksTable** - Table of overdue tasks
+
+#### Reusable Chart Components (NEW)
+
+These components are purely presentational with zero business logic:
+
+14. **StatsSummaryCards** (`src/public/features/todos/ui/components/StatsSummaryCards.tsx`)
+    - **Purpose**: 4 stat cards showing total, planned, done, error counts
+    - **Props**: `{ total, planned, done, error }` (pre-computed numbers)
+    - **Pattern**: Props in, JSX out (no hooks, no state)
+
+15. **StatusDistributionChart** (`src/public/features/todos/ui/components/StatusDistributionChart.tsx`)
+    - **Purpose**: Status distribution with progress bars
+    - **Props**: `{ items: StatusDistributionItem[] }` (includes pre-computed percentages and colors)
+    - **Pattern**: Receives chart-ready data, renders progress bars
+
+16. **TopTagsChart** (`src/public/features/todos/ui/components/TopTagsChart.tsx`)
+    - **Purpose**: Horizontal bar chart of top tags
+    - **Props**: `{ items: TagChartItem[] }` (includes pre-computed percentages)
+    - **Pattern**: Conditional rendering (returns null if no tags)
+
+17. **AssigneeDistributionChart** (`src/public/features/todos/ui/components/AssigneeDistributionChart.tsx`)
+    - **Purpose**: Horizontal bar chart of assignee distribution
+    - **Props**: `{ assignees: AssigneeChartItem[], unassigned: AssigneeChartItem | null }` (includes pre-computed percentages)
+    - **Pattern**: Conditional rendering, separate rendering for unassigned tasks
+
+#### Shared Components
+
+18. **LanguageSelector** (`src/public/components/language-selector/language-selector.tsx`)
+    - **Purpose**: i18n language switcher (English/Spanish)
+    - **Features**: Persists preference to localStorage, triggers UI re-render on change
+
+### Component Design Principles
+
+All UI components follow these strict principles (PROJECT RULE #11):
+
+1. **Zero Business Logic**: Components only render JSX and wire event handlers
+2. **No Direct State**: Only minimal UI-only state allowed (e.g., `isOpen`, `activeTab`)
+3. **All Data from Hooks**: Components receive `{ data, uiState, actions }` from hooks
+4. **No useEffect**: Side effects are forbidden in components (use hooks instead)
+5. **Pre-Computed Data**: Components receive chart-ready data (with percentages, colors already calculated)
+6. **Type Safety**: All props are strongly typed with TypeScript interfaces
+7. **EUI Consistency**: All components use `@elastic/eui` components for visual consistency
+
+### Utilities
+
+- **date-formatters.ts** (`src/public/utils/date-formatters.ts`)
+  - `formatRelativeTime()`: "2 days ago", "3 hours ago"
+  - `formatDate()`: "Jan 15, 2024"
+  - `isOverdue()`: Check if due date has passed
+  - `formatDateRange()`: "Jan 1 - Jan 31, 2024"
+
+- **theme.ts** (`src/public/constants/theme.ts`)
+  - `CHART_COLORS`: Color palette for charts (success, danger, primary, warning, etc.)
+  - `CHART_SIZES`: Sizing constants (progressBarHeight, borderRadius, etc.)
+  - `SPACING`: Consistent spacing values
+  - `mapStatusColorToHex()`: Convert EUI color names to hex codes
 
 ## Data Flow
 
@@ -774,16 +902,17 @@ sequenceDiagram
 **Purpose**: Extract and reuse stateful logic in React components.
 
 **Implementation**:
-- 12 custom hooks for different concerns
-- Hooks compose other hooks
+- 14 custom hooks for different concerns
+- Hooks compose other hooks (e.g., `useTodosPage` composes 6 data hooks)
 - Components remain pure and presentational
 
 **Benefits**:
 - Separation of concerns (UI vs. logic)
 - Reusable business logic
 - Easier testing (test hooks independently)
+- Clear data flow (props → hook → JSX)
 
-### 6. Presentational Component Pattern (PROJECT RULE #11)
+### 6. Presentational Component Pattern 
 
 **Purpose**: Enforce pure presentation in React components with zero business logic.
 
@@ -890,30 +1019,40 @@ src/
 │       ├── index.ts
 │       ├── api/
 │       │   └── todos.client.ts      # HTTP client for backend API
-│       ├── hooks/                   # Custom React hooks (12 hooks)
-│       │   ├── use_todos_page.ts            # Page orchestrator
-│       │   ├── use_todos_table.ts           # Table delete modal logic
-│       │   ├── use_todo_filters.ts          # Filter state management
-│       │   ├── use_todo_form.ts             # Form state & validation
-│       │   ├── use_compliance_dashboard.ts  # Framework selection
-│       │   ├── use_todos.ts                 # Fetch todos data
-│       │   ├── use_create_todo.ts           # Create operation
-│       │   ├── use_update_todo.ts           # Update operation
-│       │   ├── use_delete_todo.ts           # Delete operation
-│       │   ├── use_todo_stats.ts            # Statistics fetching
-│       │   ├── use_todo_analytics.ts        # Analytics fetching
-│       │   └── use_todo_suggestions.ts      # Autocomplete suggestions
+│       ├── hooks/                   # Custom React hooks (14 hooks)
+│       │   ├── use_todos_page.ts                # Page orchestrator
+│       │   ├── use_todos_table.ts               # Table delete modal logic
+│       │   ├── use_todo_filters.ts              # Filter state management
+│       │   ├── use_todo_form.ts                 # Form state & validation
+│       │   ├── use_compliance_dashboard.ts      # Framework selection
+│       │   ├── use_kanban_board.ts              # Kanban drag-drop logic
+│       │   ├── use_todos_stats_dashboard.ts     # Stats chart data transformation
+│       │   ├── use_todos.ts                     # Fetch todos data
+│       │   ├── use_create_todo.ts               # Create operation
+│       │   ├── use_update_todo.ts               # Update operation
+│       │   ├── use_delete_todo.ts               # Delete operation
+│       │   ├── use_todo_stats.ts                # Statistics fetching
+│       │   ├── use_todo_analytics.ts            # Analytics fetching
+│       │   └── use_todo_suggestions.ts          # Autocomplete suggestions
 │       ├── ui/                      # Presentational React components
-│       │   ├── TodosPage.tsx               # Main page layout
-│       │   ├── TodosTable.tsx              # TODO table with pagination
-│       │   ├── TodoFilters.tsx             # Advanced filter panel
-│       │   ├── TodoForm.tsx                # Create/Edit modal form
-│       │   ├── TodosStatsDashboard.tsx     # General statistics
-│       │   ├── ComplianceDashboard.tsx     # Compliance analytics
-│       │   ├── ComplianceFrameworkChart.tsx
-│       │   ├── PrioritySeverityHeatmap.tsx
-│       │   ├── HighCriticalTasksChart.tsx
-│       │   └── OverdueTasksTable.tsx
+│       │   ├── TodosPage.tsx                    # Main page (3 tabs: table, kanban, analytics)
+│       │   ├── TodosTable.tsx                   # TODO table with pagination
+│       │   ├── TodoFilters.tsx                  # Advanced filter panel
+│       │   ├── TodoForm.tsx                     # Create/Edit modal form
+│       │   ├── KanbanBoard.tsx                  # Kanban board view (NEW)
+│       │   ├── TodosStatsDashboard.tsx          # General statistics dashboard
+│       │   ├── ComplianceDashboard.tsx          # Compliance analytics
+│       │   ├── ComplianceFrameworkChart.tsx     # Framework coverage chart
+│       │   ├── PrioritySeverityHeatmap.tsx      # Priority/severity matrix
+│       │   ├── HighCriticalTasksChart.tsx       # High/critical distribution
+│       │   ├── OverdueTasksTable.tsx            # Overdue tasks list
+│       │   └── components/                      # Reusable chart components (NEW)
+│       │       ├── KanbanCard.tsx               # Single TODO card (draggable)
+│       │       ├── KanbanColumn.tsx             # Kanban column (droppable)
+│       │       ├── StatsSummaryCards.tsx        # Summary stat cards
+│       │       ├── StatusDistributionChart.tsx  # Status progress bars
+│       │       ├── TopTagsChart.tsx             # Top tags bar chart
+│       │       └── AssigneeDistributionChart.tsx # Assignee bar chart
 │       └── __tests__/               # Frontend tests (6 suites)
 │           ├── setup.ts
 │           ├── TodosPage.test.tsx

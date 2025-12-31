@@ -8,21 +8,50 @@ import {
   PaginationMeta,
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
-  TODO_PRIORITY_VALUES,
-  TODO_SEVERITY_VALUES,
-  MAX_COMPLIANCE_FRAMEWORKS,
-  MAX_COMPLIANCE_FRAMEWORK_LENGTH,
 } from '../../common';
 import { TodosRepository, TodoOpenSearchClient, TodoSearchParams } from '../repositories';
 import { TodosMapper } from '../mappers';
 import { ValidationError } from '../errors';
+import { FieldValidators } from './validators/field-validators';
+
+/**
+ * Service layer for TODO item business logic.
+ *
+ * Handles CRUD operations, validation, and business rules for TODO items.
+ * Orchestrates repository access and applies domain logic.
+ *
+ * @remarks
+ * This service implements the business logic layer in the 5-layer architecture:
+ * Routes → Controllers → **Services** → Repositories → Mappers
+ */
 export class TodosService {
   private readonly logger: Logger;
   private readonly repository: TodosRepository;
+
   constructor(logger: Logger, repository: TodosRepository) {
     this.logger = logger;
     this.repository = repository;
   }
+
+  /**
+   * Creates a new TODO item.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @param request - TODO creation request with required fields
+   * @returns Created TODO with generated ID and timestamps
+   * @throws {ValidationError} If request validation fails
+   * @throws {IndexError} If OpenSearch operation fails
+   *
+   * @example
+   * ```typescript
+   * const todo = await service.create(client, {
+   *   title: 'Fix security vulnerability',
+   *   status: 'planned',
+   *   priority: 'high',
+   *   severity: 'critical'
+   * });
+   * ```
+   */
   async create(client: TodoOpenSearchClient, request: CreateTodoRequest): Promise<Todo> {
     this.validateCreateRequest(request);
     const now = new Date().toISOString();
@@ -30,10 +59,42 @@ export class TodosService {
     this.logger.debug(`Creating TODO: ${request.title}`);
     return this.repository.create(client, document);
   }
+
+  /**
+   * Retrieves a TODO item by its ID.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @param id - Unique identifier of the TODO item
+   * @returns TODO item with the specified ID
+   * @throws {ValidationError} If ID is invalid
+   * @throws {NotFoundError} If TODO with the specified ID does not exist
+   * @throws {IndexError} If OpenSearch operation fails
+   */
   async getById(client: TodoOpenSearchClient, id: string): Promise<Todo> {
     this.validateId(id);
     return this.repository.getById(client, id);
   }
+
+  /**
+   * Lists TODO items with filtering, searching, pagination, and sorting.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @param params - Query parameters for filtering, pagination, and sorting
+   * @returns Paginated list of TODO items matching the query
+   * @throws {IndexError} If OpenSearch operation fails
+   *
+   * @example
+   * ```typescript
+   * const result = await service.list(client, {
+   *   status: ['planned', 'error'],
+   *   priority: 'high',
+   *   page: 1,
+   *   pageSize: 20,
+   *   sortField: 'createdAt',
+   *   sortDirection: 'desc'
+   * });
+   * ```
+   */
   async list(client: TodoOpenSearchClient, params: ListTodosQueryParams): Promise<ListTodosResponse> {
     const searchParams = this.buildSearchParams(params);
     const result = await this.repository.search(client, searchParams);
@@ -53,6 +114,31 @@ export class TodosService {
       pagination,
     };
   }
+
+  /**
+   * Updates an existing TODO item with partial updates.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @param id - Unique identifier of the TODO item to update
+   * @param request - Update request with fields to modify (partial update)
+   * @returns Updated TODO item with new values
+   * @throws {ValidationError} If ID or update request is invalid
+   * @throws {NotFoundError} If TODO with the specified ID does not exist
+   * @throws {IndexError} If OpenSearch operation fails
+   *
+   * @remarks
+   * - Automatically manages completedAt timestamp based on status transitions
+   * - Sets completedAt when status changes to 'done'
+   * - Clears completedAt when status changes from 'done' to another status
+   *
+   * @example
+   * ```typescript
+   * const updated = await service.update(client, todoId, {
+   *   status: 'done',
+   *   description: 'Completed the security fix'
+   * });
+   * ```
+   */
   async update(
     client: TodoOpenSearchClient,
     id: string,
@@ -69,96 +155,48 @@ export class TodosService {
     await this.repository.update(client, id, updateDocument);
     return TodosMapper.mergeUpdate(existingTodo, updateDocument, id);
   }
+
+  /**
+   * Deletes a TODO item permanently.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @param id - Unique identifier of the TODO item to delete
+   * @returns True if the TODO was successfully deleted
+   * @throws {ValidationError} If ID is invalid
+   * @throws {NotFoundError} If TODO with the specified ID does not exist
+   * @throws {IndexError} If OpenSearch operation fails
+   */
   async delete(client: TodoOpenSearchClient, id: string): Promise<boolean> {
     this.validateId(id);
     return this.repository.delete(client, id);
   }
+
+  /**
+   * Validates a create TODO request.
+   *
+   * @param request - Create request to validate
+   * @throws {ValidationError} If any field fails validation
+   * @private
+   */
   private validateCreateRequest(request: CreateTodoRequest): void {
-    if (!request.title || request.title.trim().length === 0) {
-      throw new ValidationError('Title is required', { field: 'title' });
-    }
-    if (request.title.length > 256) {
-      throw new ValidationError('Title must not exceed 256 characters', {
-        field: 'title',
-        maxLength: 256,
-        actualLength: request.title.length,
-      });
-    }
-    if (request.description && request.description.length > 4000) {
-      throw new ValidationError('Description must not exceed 4000 characters', {
-        field: 'description',
-        maxLength: 4000,
-        actualLength: request.description.length,
-      });
-    }
-    if (request.status && !['planned', 'done', 'error'].includes(request.status)) {
-      throw new ValidationError(`Invalid status: ${request.status}`, {
-        field: 'status',
-        validValues: ['planned', 'done', 'error'],
-      });
-    }
-    if (request.tags) {
-      if (request.tags.length > 20) {
-        throw new ValidationError('Maximum 20 tags allowed', {
-          field: 'tags',
-          maxTags: 20,
-          actualTags: request.tags.length,
-        });
-      }
-      for (const tag of request.tags) {
-        if (tag.length > 50) {
-          throw new ValidationError('Each tag must not exceed 50 characters', {
-            field: 'tags',
-            maxLength: 50,
-            tag,
-          });
-        }
-      }
-    }
-    if (request.assignee && request.assignee.length > 100) {
-      throw new ValidationError('Assignee must not exceed 100 characters', {
-        field: 'assignee',
-        maxLength: 100,
-        actualLength: request.assignee.length,
-      });
-    }
-    if (request.priority && !TODO_PRIORITY_VALUES.includes(request.priority)) {
-      throw new ValidationError(`Invalid priority: ${request.priority}`, {
-        field: 'priority',
-        validValues: [...TODO_PRIORITY_VALUES],
-      });
-    }
-    if (request.severity && !TODO_SEVERITY_VALUES.includes(request.severity)) {
-      throw new ValidationError(`Invalid severity: ${request.severity}`, {
-        field: 'severity',
-        validValues: [...TODO_SEVERITY_VALUES],
-      });
-    }
-    if (request.dueDate && !this.isValidISODate(request.dueDate)) {
-      throw new ValidationError('Invalid dueDate format. Use ISO 8601 format (e.g., 2025-12-31T23:59:59Z)', {
-        field: 'dueDate',
-        format: 'ISO 8601',
-      });
-    }
-    if (request.complianceFrameworks) {
-      if (request.complianceFrameworks.length > MAX_COMPLIANCE_FRAMEWORKS) {
-        throw new ValidationError(`Maximum ${MAX_COMPLIANCE_FRAMEWORKS} compliance frameworks allowed`, {
-          field: 'complianceFrameworks',
-          maxFrameworks: MAX_COMPLIANCE_FRAMEWORKS,
-          actualFrameworks: request.complianceFrameworks.length,
-        });
-      }
-      for (const framework of request.complianceFrameworks) {
-        if (framework.length > MAX_COMPLIANCE_FRAMEWORK_LENGTH) {
-          throw new ValidationError(`Each compliance framework must not exceed ${MAX_COMPLIANCE_FRAMEWORK_LENGTH} characters`, {
-            field: 'complianceFrameworks',
-            maxLength: MAX_COMPLIANCE_FRAMEWORK_LENGTH,
-            framework,
-          });
-        }
-      }
-    }
+    FieldValidators.validateTitle(request.title, true);
+    FieldValidators.validateDescription(request.description);
+    FieldValidators.validateStatus(request.status);
+    FieldValidators.validateTags(request.tags);
+    FieldValidators.validateAssignee(request.assignee);
+    FieldValidators.validatePriority(request.priority);
+    FieldValidators.validateSeverity(request.severity);
+    FieldValidators.validateDueDate(request.dueDate, false);
+    FieldValidators.validateComplianceFrameworks(request.complianceFrameworks);
   }
+
+  /**
+   * Validates an update TODO request.
+   *
+   * @param request - Update request to validate
+   * @throws {ValidationError} If no fields are provided or any field fails validation
+   * @private
+   */
   private validateUpdateRequest(request: UpdateTodoRequest): void {
     const hasUpdates =
       request.title !== undefined ||
@@ -170,114 +208,56 @@ export class TodosService {
       request.severity !== undefined ||
       request.dueDate !== undefined ||
       request.complianceFrameworks !== undefined;
+
     if (!hasUpdates) {
       throw new ValidationError('At least one field must be provided for update');
     }
-    if (request.title !== undefined) {
-      if (request.title.trim().length === 0) {
-        throw new ValidationError('Title cannot be empty', { field: 'title' });
-      }
-      if (request.title.length > 256) {
-        throw new ValidationError('Title must not exceed 256 characters', {
-          field: 'title',
-          maxLength: 256,
-          actualLength: request.title.length,
-        });
-      }
-    }
-    if (request.description !== undefined && request.description.length > 4000) {
-      throw new ValidationError('Description must not exceed 4000 characters', {
-        field: 'description',
-        maxLength: 4000,
-        actualLength: request.description.length,
-      });
-    }
-    if (request.status !== undefined && !['planned', 'done', 'error'].includes(request.status)) {
-      throw new ValidationError(`Invalid status: ${request.status}`, {
-        field: 'status',
-        validValues: ['planned', 'done', 'error'],
-      });
-    }
-    if (request.tags !== undefined) {
-      if (request.tags.length > 20) {
-        throw new ValidationError('Maximum 20 tags allowed', {
-          field: 'tags',
-          maxTags: 20,
-          actualTags: request.tags.length,
-        });
-      }
-      for (const tag of request.tags) {
-        if (tag.length > 50) {
-          throw new ValidationError('Each tag must not exceed 50 characters', {
-            field: 'tags',
-            maxLength: 50,
-            tag,
-          });
-        }
-      }
-    }
-    if (request.assignee !== undefined && request.assignee.length > 100) {
-      throw new ValidationError('Assignee must not exceed 100 characters', {
-        field: 'assignee',
-        maxLength: 100,
-        actualLength: request.assignee.length,
-      });
-    }
-    if (request.priority !== undefined && !TODO_PRIORITY_VALUES.includes(request.priority)) {
-      throw new ValidationError(`Invalid priority: ${request.priority}`, {
-        field: 'priority',
-        validValues: [...TODO_PRIORITY_VALUES],
-      });
-    }
-    if (request.severity !== undefined && !TODO_SEVERITY_VALUES.includes(request.severity)) {
-      throw new ValidationError(`Invalid severity: ${request.severity}`, {
-        field: 'severity',
-        validValues: [...TODO_SEVERITY_VALUES],
-      });
-    }
-    if (request.dueDate !== undefined && request.dueDate !== null) {
-      if (!this.isValidISODate(request.dueDate)) {
-        throw new ValidationError('Invalid dueDate format. Use ISO 8601 format (e.g., 2025-12-31T23:59:59Z)', {
-          field: 'dueDate',
-          format: 'ISO 8601',
-        });
-      }
-    }
-    if (request.complianceFrameworks !== undefined) {
-      if (request.complianceFrameworks.length > MAX_COMPLIANCE_FRAMEWORKS) {
-        throw new ValidationError(`Maximum ${MAX_COMPLIANCE_FRAMEWORKS} compliance frameworks allowed`, {
-          field: 'complianceFrameworks',
-          maxFrameworks: MAX_COMPLIANCE_FRAMEWORKS,
-          actualFrameworks: request.complianceFrameworks.length,
-        });
-      }
-      for (const framework of request.complianceFrameworks) {
-        if (framework.length > MAX_COMPLIANCE_FRAMEWORK_LENGTH) {
-          throw new ValidationError(`Each compliance framework must not exceed ${MAX_COMPLIANCE_FRAMEWORK_LENGTH} characters`, {
-            field: 'complianceFrameworks',
-            maxLength: MAX_COMPLIANCE_FRAMEWORK_LENGTH,
-            framework,
-          });
-        }
-      }
-    }
+
+    FieldValidators.validateTitle(request.title, false);
+    FieldValidators.validateDescription(request.description);
+    FieldValidators.validateStatus(request.status);
+    FieldValidators.validateTags(request.tags);
+    FieldValidators.validateAssignee(request.assignee);
+    FieldValidators.validatePriority(request.priority);
+    FieldValidators.validateSeverity(request.severity);
+    FieldValidators.validateDueDate(request.dueDate, true);
+    FieldValidators.validateComplianceFrameworks(request.complianceFrameworks);
   }
+
+  /**
+   * Validates a TODO ID.
+   *
+   * @param id - ID to validate
+   * @throws {ValidationError} If ID is empty or whitespace
+   * @private
+   */
   private validateId(id: string): void {
     if (!id || id.trim().length === 0) {
       throw new ValidationError('ID is required', { field: 'id' });
     }
   }
+
+  /**
+   * Validates a status transition (placeholder for future business rules).
+   *
+   * @param currentStatus - Current status of the TODO
+   * @param newStatus - New status to transition to
+   * @private
+   */
   private validateStatusTransition(currentStatus: string, newStatus: string): void {
     this.logger.debug(`Status transition: ${currentStatus} -> ${newStatus}`);
   }
-  private isValidISODate(dateString: string): boolean {
-    try {
-      const date = new Date(dateString);
-      return !isNaN(date.getTime()) && dateString === date.toISOString();
-    } catch {
-      return false;
-    }
-  }
+
+  /**
+   * Retrieves suggestions for tags and compliance frameworks.
+   *
+   * @param client - OpenSearch client with request-scoped permissions
+   * @returns Lists of unique tags and compliance frameworks currently in use
+   * @throws {IndexError} If OpenSearch operation fails
+   *
+   * @remarks
+   * Used to populate autocomplete/suggestion dropdowns in the UI.
+   */
   async getSuggestions(client: TodoOpenSearchClient): Promise<{
     tags: string[];
     complianceFrameworks: string[];
@@ -285,6 +265,13 @@ export class TodosService {
     return this.repository.getSuggestions(client);
   }
 
+  /**
+   * Builds search parameters from query parameters.
+   *
+   * @param params - List query parameters from HTTP request
+   * @returns Normalized search parameters for repository
+   * @private
+   */
   private buildSearchParams(params: ListTodosQueryParams): TodoSearchParams {
     return {
       page: params.page,

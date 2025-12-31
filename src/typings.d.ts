@@ -164,6 +164,184 @@ declare module '@osd/i18n/react' {
   export const injectI18n: any;
 }
 
+declare module 'react-intl' {
+  import { ComponentType, ReactElement, ReactNode } from 'react';
+
+  export interface IntlShape {
+    formatMessage: (descriptor: MessageDescriptor, values?: Record<string, any>) => string;
+    formatDate: (value: Date | number, options?: any) => string;
+    formatTime: (value: Date | number, options?: any) => string;
+    formatNumber: (value: number, options?: any) => string;
+    formatRelativeTime: (value: number, unit?: string, options?: any) => string;
+    locale: string;
+  }
+
+  export interface MessageDescriptor {
+    id: string;
+    defaultMessage?: string;
+    description?: string;
+  }
+
+  export const IntlProvider: ComponentType<{
+    locale: string;
+    messages?: Record<string, string>;
+    children: ReactNode;
+  }>;
+
+  export function FormattedMessage(props: {
+    id: string;
+    defaultMessage?: string;
+    values?: Record<string, any>;
+  }): ReactElement;
+
+  export function FormattedDate(props: {
+    value: Date | number;
+    format?: string;
+  }): ReactElement;
+
+  export function FormattedTime(props: {
+    value: Date | number;
+    format?: string;
+  }): ReactElement;
+
+  export function FormattedNumber(props: {
+    value: number;
+    format?: string;
+  }): ReactElement;
+
+  export function useIntl(): IntlShape;
+  export function injectIntl<P>(component: ComponentType<P>): ComponentType<P>;
+  export function defineMessages<T extends Record<string, MessageDescriptor>>(messages: T): T;
+}
+
+declare module '@testing-library/react' {
+  import { ReactElement, ComponentType } from 'react';
+
+  export interface RenderResult {
+    container: HTMLElement;
+    baseElement: HTMLElement;
+    debug: (element?: HTMLElement) => void;
+    rerender: (ui: ReactElement) => void;
+    unmount: () => void;
+    asFragment: () => DocumentFragment;
+    getByText: (text: string | RegExp) => HTMLElement;
+    getByTestId: (testId: string) => HTMLElement;
+    getByRole: (role: string, options?: any) => HTMLElement;
+    getByLabelText: (text: string | RegExp) => HTMLElement;
+    queryByText: (text: string | RegExp) => HTMLElement | null;
+    queryByTestId: (testId: string) => HTMLElement | null;
+    queryByRole: (role: string, options?: any) => HTMLElement | null;
+    findByText: (text: string | RegExp) => Promise<HTMLElement>;
+    findByTestId: (testId: string) => Promise<HTMLElement>;
+    findByRole: (role: string, options?: any) => Promise<HTMLElement>;
+  }
+
+  export interface RenderOptions {
+    container?: HTMLElement;
+    baseElement?: HTMLElement;
+    wrapper?: ComponentType<any>;
+  }
+
+  export function render(ui: ReactElement, options?: RenderOptions): RenderResult;
+  export function cleanup(): void;
+  export function waitFor<T>(callback: () => T | Promise<T>, options?: any): Promise<T>;
+  export function waitForElementToBeRemoved<T>(callback: () => T, options?: any): Promise<void>;
+  export function within(element: HTMLElement): any;
+  export const screen: any;
+  export const fireEvent: any;
+  export const act: any;
+}
+
+declare module 'react-router-dom' {
+  import { ComponentType, ReactNode } from 'react';
+
+  export interface RouteProps {
+    path?: string | string[];
+    exact?: boolean;
+    strict?: boolean;
+    sensitive?: boolean;
+    component?: ComponentType<any>;
+    render?: (props: any) => ReactNode;
+    children?: ReactNode | ((props: any) => ReactNode);
+  }
+
+  export interface RouteComponentProps<Params = any> {
+    history: any;
+    location: any;
+    match: {
+      params: Params;
+      isExact: boolean;
+      path: string;
+      url: string;
+    };
+  }
+
+  export const BrowserRouter: ComponentType<{ children: ReactNode }>;
+  export const HashRouter: ComponentType<{ children: ReactNode }>;
+  export const Route: ComponentType<RouteProps>;
+  export const Switch: ComponentType<{ children: ReactNode }>;
+  export const Redirect: ComponentType<{ to: string; from?: string; exact?: boolean }>;
+  export const Link: ComponentType<{ to: string; children: ReactNode; className?: string }>;
+  export const NavLink: ComponentType<{ to: string; children: ReactNode; activeClassName?: string }>;
+
+  export function useHistory(): any;
+  export function useLocation(): any;
+  export function useParams<T = any>(): T;
+  export function useRouteMatch<T = any>(path?: string): any;
+  export function withRouter<P>(component: ComponentType<P>): ComponentType<P>;
+}
+
+declare module '../../../../src/plugins/navigation/public' {
+  export interface NavigationPublicPluginSetup {
+    registerMenuItem: (item: any) => void;
+  }
+
+  export interface NavigationPublicPluginStart {
+    ui: {
+      TopNavMenu: any;
+      HeaderActionMenu: any;
+    };
+  }
+}
+
+declare module '../../../src/plugins/navigation/public' {
+  export * from '../../../../src/plugins/navigation/public';
+}
+
+declare module '**/src/plugins/navigation/public' {
+  export * from '../../../../src/plugins/navigation/public';
+}
+
+// Jest globals for test files
+declare const describe: {
+  (name: string, fn: () => void): void;
+  only: (name: string, fn: () => void) => void;
+  skip: (name: string, fn: () => void) => void;
+  each: (cases: any[][]) => (name: string, fn: (...args: any[]) => void) => void;
+};
+
+declare const it: {
+  (name: string, fn: () => void | Promise<void>): void;
+  only: (name: string, fn: () => void | Promise<void>) => void;
+  skip: (name: string, fn: () => void | Promise<void>) => void;
+  each: (cases: any[][]) => (name: string, fn: (...args: any[]) => void | Promise<void>) => void;
+};
+
+declare const test: {
+  (name: string, fn: () => void | Promise<void>): void;
+  only: (name: string, fn: () => void | Promise<void>) => void;
+  skip: (name: string, fn: () => void | Promise<void>) => void;
+  each: (cases: any[][]) => (name: string, fn: (...args: any[]) => void | Promise<void>) => void;
+};
+
+declare const expect: any;
+declare const jest: any;
+
+declare const beforeEach: (fn: () => void | Promise<void>) => void;
+declare const afterEach: (fn: () => void | Promise<void>) => void;
+declare const beforeAll: (fn: () => void | Promise<void>) => void;
+declare const afterAll: (fn: () => void | Promise<void>) => void;
+
 declare module '**/src/core/public' {
   export * from 'opensearch-dashboards/public';
 }

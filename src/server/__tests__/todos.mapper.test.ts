@@ -420,6 +420,7 @@ describe('TodosMapper', () => {
       expect(result.total).toBe(100);
       expect(result.byStatus).toEqual({
         planned: 50,
+        in_progress: 0,
         done: 30,
         error: 20,
       });
@@ -449,6 +450,7 @@ describe('TodosMapper', () => {
       expect(result.total).toBe(0);
       expect(result.byStatus).toEqual({
         planned: 0,
+        in_progress: 0,
         done: 0,
         error: 0,
       });

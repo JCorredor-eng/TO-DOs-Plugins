@@ -4,6 +4,7 @@ import {
   TodoStatus,
   TodoPriority,
   TodoSeverity,
+  TODO_STATUS_VALUES,
   TODO_STATUS_LABELS,
   TODO_PRIORITY_VALUES,
   TODO_PRIORITY_LABELS,
@@ -53,23 +54,12 @@ export const useTodoFilters = ({
 
   // Build selectable options
   const statusOptions: EuiSelectableOption[] = useMemo(
-    () => [
-      {
-        label: TODO_STATUS_LABELS.planned,
-        key: 'planned',
-        checked: selectedStatuses.includes('planned') ? 'on' : undefined,
-      },
-      {
-        label: TODO_STATUS_LABELS.done,
-        key: 'done',
-        checked: selectedStatuses.includes('done') ? 'on' : undefined,
-      },
-      {
-        label: TODO_STATUS_LABELS.error,
-        key: 'error',
-        checked: selectedStatuses.includes('error') ? 'on' : undefined,
-      },
-    ],
+    () =>
+      TODO_STATUS_VALUES.map((status) => ({
+        label: TODO_STATUS_LABELS[status],
+        key: status,
+        checked: selectedStatuses.includes(status) ? 'on' : undefined,
+      })),
     [selectedStatuses]
   );
 

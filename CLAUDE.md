@@ -363,6 +363,37 @@ These rules MUST be followed when working with this codebase:
     - ✅ Documentation complete: 8 comprehensive documentation files
     - Keep documentation in sync with code changes
 
+11. **UI Components Must Be Mostly Presentational**
+    - **Pages and UI components MUST be mostly presentational.**
+    - **Business logic, data orchestration, and side effects MUST NOT live inside components/pages.**
+    - **Non-trivial `useState` and all `useEffect` logic MUST be implemented in custom hooks.**
+
+    **Allowed in Components/Pages:**
+    - JSX and layout composition
+    - Styling and visual concerns
+    - Props wiring and event forwarding
+    - **Minimal UI-only state** (e.g., `isOpen`, `activeTab`, `selectedRowId`, visual toggles)
+
+    **Forbidden in Components/Pages:**
+    - Data fetching logic or API calls
+    - `useEffect` with side effects (network, storage, subscriptions, timers, analytics)
+    - Business rules or decision trees
+    - Data transformation or DTO construction
+    - Derived or synchronized state
+    - Complex conditional flows
+    - Permission or validation logic
+
+    **Custom Hooks Responsibilities:**
+    - Encapsulate: data fetching, side effects, business rules, state coordination
+    - Expose a **UI-friendly contract**: `{ data, uiState, actions }`
+    - Example shape:
+      ```ts
+      const { data, uiState, actions } = useFeaturePage();
+      // data → already shaped for rendering
+      // uiState → loading, error, empty, pagination, filters
+      // actions → callbacks invoked by the UI
+      ```
+
 Always use context7 when I need code generation, setup or configuration steps, or
 library/API documentation. This means you should automatically use the Context7 MCP
 tools to resolve library id and get library docs without me having to explicitly ask.

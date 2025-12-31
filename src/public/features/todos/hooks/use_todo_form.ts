@@ -6,6 +6,7 @@ import {
   TodoStatus,
   TodoPriority,
   TodoSeverity,
+  TODO_STATUS_VALUES,
   TODO_STATUS_LABELS,
   TODO_PRIORITY_VALUES,
   TODO_PRIORITY_LABELS,
@@ -73,11 +74,11 @@ export const useTodoForm = ({ todo, onSubmit, client }: UseTodoFormParams) => {
 
   // Select options
   const statusOptions = useMemo(
-    () => [
-      { value: 'planned', text: TODO_STATUS_LABELS.planned },
-      { value: 'done', text: TODO_STATUS_LABELS.done },
-      { value: 'error', text: TODO_STATUS_LABELS.error },
-    ],
+    () =>
+      TODO_STATUS_VALUES.map((status) => ({
+        value: status,
+        text: TODO_STATUS_LABELS[status],
+      })),
     []
   );
 
@@ -228,7 +229,7 @@ export const useTodoForm = ({ todo, onSubmit, client }: UseTodoFormParams) => {
 
   const onCreateTag = useCallback((searchValue: string) => {
     const newOption = { label: searchValue };
-    setSelectedTags((prev: any) => [...prev, newOption]);
+    setSelectedTags((prev) => [...prev, newOption]);
   }, []);
 
   const onCreateComplianceFramework = useCallback((searchValue: string) => {

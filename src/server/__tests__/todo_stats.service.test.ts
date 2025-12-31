@@ -21,7 +21,8 @@ describe('TodoStatsService', () => {
     aggregations: {
       by_status: {
         buckets: [
-          { key: 'planned', doc_count: 50 },
+          { key: 'planned', doc_count: 40 },
+          { key: 'in_progress', doc_count: 10 },
           { key: 'done', doc_count: 40 },
           { key: 'error', doc_count: 10 },
         ],
@@ -65,7 +66,8 @@ describe('TodoStatsService', () => {
       mockRepository.getStats.mockResolvedValue(sampleStatsResult);
       const result = await service.getStats(mockClient, {});
       expect(result.total).toBe(100);
-      expect(result.byStatus.planned).toBe(50);
+      expect(result.byStatus.planned).toBe(40);
+      expect(result.byStatus.in_progress).toBe(10);
       expect(result.byStatus.done).toBe(40);
       expect(result.byStatus.error).toBe(10);
       expect(result.topTags).toHaveLength(3);
@@ -121,7 +123,8 @@ describe('TodoStatsService', () => {
       mockRepository.getStats.mockResolvedValue(sampleStatsResult);
       const result = await service.getStats(mockClient, {});
       expect(result.byStatus).toEqual({
-        planned: 50,
+        planned: 40,
+        in_progress: 10,
         done: 40,
         error: 10,
       });
@@ -158,7 +161,7 @@ describe('TodoStatsService', () => {
       mockRepository.getStats.mockResolvedValue(emptyResult);
       const result = await service.getStats(mockClient, {});
       expect(result.total).toBe(0);
-      expect(result.byStatus).toEqual({ planned: 0, done: 0, error: 0 });
+      expect(result.byStatus).toEqual({ planned: 0, in_progress: 0, done: 0, error: 0 });
       expect(result.topTags).toEqual([]);
       expect(result.completedOverTime).toEqual([]);
       expect(result.topAssignees).toEqual([]);

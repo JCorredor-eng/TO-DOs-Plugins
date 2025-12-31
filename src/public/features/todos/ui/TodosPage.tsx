@@ -8,19 +8,13 @@ import {
   EuiButton,
   EuiTabbedContent,
   EuiTabbedContentTab,
-  EuiSpacer,
-  EuiEmptyPrompt,
-  EuiCallOut,
-  EuiText,
-  EuiTitle,
 } from '@elastic/eui';
 import { FormattedMessage } from '@osd/i18n/react';
 import { HttpSetup, NotificationsStart } from '../../../../../src/core/public';
-import { TodosTable } from './TodosTable';
-import { TodosStatsDashboard } from './TodosStatsDashboard';
 import { TodoForm } from './TodoForm';
-import { TodoFilters } from './TodoFilters';
-import { ComplianceDashboard } from './ComplianceDashboard';
+import { TableTab } from './tabs/TableTab';
+import { KanbanTab } from './tabs/KanbanTab';
+import { AnalyticsTab } from './tabs/AnalyticsTab';
 import { LanguageSelector } from '../../../components/language-selector';
 import { useTodosPage } from '../hooks/use_todos_page';
 
@@ -69,6 +63,7 @@ export const TodosPage: React.FC<TodosPageProps> = ({ http, notifications, dateR
     handleEditClick,
     handleFormClose,
     handleFormSubmit,
+    updateTodo,
     deleteTodo,
     refreshAnalytics,
     handleFrameworkFilterChange,
@@ -78,134 +73,71 @@ export const TodosPage: React.FC<TodosPageProps> = ({ http, notifications, dateR
       id: 'table',
       name: <FormattedMessage id="customPlugin.tabs.table" defaultMessage="Table View" />,
       content: (
-        <>
-          <EuiSpacer size="m" />
-          <TodoFilters
-            searchText={searchText}
-            selectedStatuses={selectedStatuses}
-            selectedTags={selectedTags}
-            selectedPriorities={selectedPriorities}
-            selectedSeverities={selectedSeverities}
-            showOverdueOnly={showOverdueOnly}
-            dateFilters={dateFilters}
-            onFiltersChange={handleFiltersChange}
-          />
-          {error ? (
-            <EuiCallOut
-              title={
-                <FormattedMessage
-                  id="customPlugin.error.loadingTodos"
-                  defaultMessage="Error Loading TODOs"
-                />
-              }
-              color="danger"
-              iconType="alert"
-            >
-              <p>{error.message}</p>
-            </EuiCallOut>
-          ) : todos.length === 0 && !loading ? (
-            <EuiEmptyPrompt
-              iconType="document"
-              title={
-                <h2>
-                  <FormattedMessage
-                    id="customPlugin.empty.noTodos.title"
-                    defaultMessage="No TODOs Found"
-                  />
-                </h2>
-              }
-              body={
-                <p>
-                  <FormattedMessage
-                    id="customPlugin.empty.noTodos.body"
-                    defaultMessage="Create your first TODO item to get started."
-                  />
-                </p>
-              }
-              actions={
-                <EuiButton onClick={handleCreateClick} fill iconType="plusInCircle">
-                  <FormattedMessage
-                    id="customPlugin.actions.button.createTodo"
-                    defaultMessage="Create TODO"
-                  />
-                </EuiButton>
-              }
-            />
-          ) : (
-            <TodosTable
-              todos={todos}
-              pagination={pagination}
-              loading={loading}
-              sortField={sortField}
-              sortDirection={sortDirection}
-              onEdit={handleEditClick}
-              onDelete={deleteTodo}
-              onTableChange={handleTableChange}
-            />
-          )}
-        </>
+        <TableTab
+          todos={todos}
+          pagination={pagination}
+          loading={loading}
+          error={error}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          filters={{
+            searchText,
+            selectedStatuses,
+            selectedTags,
+            selectedPriorities,
+            selectedSeverities,
+            showOverdueOnly,
+            dateFilters,
+          }}
+          onCreateClick={handleCreateClick}
+          onEdit={handleEditClick}
+          onDelete={deleteTodo}
+          onTableChange={handleTableChange}
+          onFiltersChange={handleFiltersChange}
+        />
+      ),
+    },
+    {
+      id: 'kanban',
+      name: <FormattedMessage id="customPlugin.tabs.kanban" defaultMessage="Kanban Board" />,
+      content: (
+        <KanbanTab
+          todos={todos}
+          loading={loading}
+          error={error}
+          filters={{
+            searchText,
+            selectedStatuses,
+            selectedTags,
+            selectedPriorities,
+            selectedSeverities,
+            showOverdueOnly,
+            dateFilters,
+          }}
+          onCreateClick={handleCreateClick}
+          onStatusChange={async (todoId, status) => {
+            await updateTodo(todoId, { status });
+          }}
+          onEdit={handleEditClick}
+          onDelete={deleteTodo}
+          onFiltersChange={handleFiltersChange}
+        />
       ),
     },
     {
       id: 'analytics',
       name: <FormattedMessage id="customPlugin.tabs.analytics" defaultMessage="Analytics" />,
       content: (
-        <>
-          <EuiSpacer size="l" />
-          <div>
-            <EuiTitle size="m">
-              <h2>
-                <FormattedMessage
-                  id="customPlugin.analytics.section.statistics"
-                  defaultMessage="General Statistics"
-                />
-              </h2>
-            </EuiTitle>
-            <EuiSpacer size="s" />
-            <EuiText size="s" color="subdued">
-              <p>
-                <FormattedMessage
-                  id="customPlugin.analytics.section.statistics.description"
-                  defaultMessage="Overview of all TODO items including status distribution and most used tags"
-                />
-              </p>
-            </EuiText>
-            <EuiSpacer size="m" />
-            <TodosStatsDashboard stats={stats} loading={statsLoading} error={statsError} />
-          </div>
-
-          <EuiSpacer size="xl" />
-          <EuiSpacer size="xl" />
-          <div>
-            <EuiTitle size="m">
-              <h2>
-                <FormattedMessage
-                  id="customPlugin.analytics.section.compliance"
-                  defaultMessage="Compliance & Security Analytics"
-                />
-              </h2>
-            </EuiTitle>
-            <EuiSpacer size="s" />
-            <EuiText size="s" color="subdued">
-              <p>
-                <FormattedMessage
-                  id="customPlugin.analytics.section.compliance.description"
-                  defaultMessage="Compliance framework coverage, priority distribution, and security task analysis"
-                />
-              </p>
-            </EuiText>
-            <EuiSpacer size="m" />
-            <ComplianceDashboard
-              data={analytics}
-              loading={analyticsLoading}
-              error={analyticsError}
-              onRefresh={refreshAnalytics}
-              onFrameworkChange={handleFrameworkFilterChange}
-            />
-          </div>
-
-          <EuiSpacer size="l" />
-        </>
+        <AnalyticsTab
+          stats={stats}
+          statsLoading={statsLoading}
+          statsError={statsError}
+          analytics={analytics}
+          analyticsLoading={analyticsLoading}
+          analyticsError={analyticsError}
+          onRefresh={refreshAnalytics}
+          onFrameworkFilterChange={handleFrameworkFilterChange}
+        />
       ),
     },
   ];
@@ -237,7 +169,7 @@ export const TodosPage: React.FC<TodosPageProps> = ({ http, notifications, dateR
             <EuiTabbedContent
               tabs={tabs}
               selectedTab={tabs.find((tab) => tab.id === selectedTab)}
-              onTabClick={(tab) => setSelectedTab(tab.id as 'table' | 'analytics')}
+              onTabClick={(tab) => setSelectedTab(tab.id as 'table' | 'analytics' | 'kanban')}
             />
           </EuiPageContentBody>
         </EuiPageContent>

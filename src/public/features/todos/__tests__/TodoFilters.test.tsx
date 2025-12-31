@@ -28,6 +28,7 @@ describe('TodoFilters', () => {
       data: {
         statusOptions: [
           { label: 'Planned', key: 'planned', checked: undefined },
+          { label: 'In Progress', key: 'in_progress', checked: undefined },
           { label: 'Done', key: 'done', checked: undefined },
           { label: 'Error', key: 'error', checked: undefined },
         ],
@@ -118,6 +119,7 @@ describe('TodoFilters', () => {
         data: {
           statusOptions: [
             { label: 'Planned', key: 'planned', checked: undefined },
+            { label: 'In Progress', key: 'in_progress', checked: undefined },
             { label: 'Done', key: 'done', checked: undefined },
             { label: 'Error', key: 'error', checked: undefined },
           ],
@@ -185,6 +187,7 @@ describe('TodoFilters', () => {
         data: {
           statusOptions: [
             { label: 'Planned', key: 'planned', checked: undefined },
+            { label: 'In Progress', key: 'in_progress', checked: undefined },
             { label: 'Done', key: 'done', checked: undefined },
             { label: 'Error', key: 'error', checked: undefined },
           ],
@@ -347,6 +350,7 @@ describe('TodoFilters', () => {
         data: {
           statusOptions: [
             { label: 'Planned', key: 'planned', checked: undefined },
+            { label: 'In Progress', key: 'in_progress', checked: undefined },
             { label: 'Done', key: 'done', checked: undefined },
             { label: 'Error', key: 'error', checked: undefined },
           ],
@@ -432,6 +436,7 @@ describe('TodoFilters', () => {
         data: {
           statusOptions: [
             { label: 'Planned', key: 'planned', checked: 'on' },
+            { label: 'In Progress', key: 'in_progress', checked: undefined },
             { label: 'Done', key: 'done', checked: undefined },
             { label: 'Error', key: 'error', checked: undefined },
           ],
@@ -496,6 +501,7 @@ describe('TodoFilters', () => {
         data: {
           statusOptions: [
             { label: 'Planned', key: 'planned', checked: 'on' },
+            { label: 'In Progress', key: 'in_progress', checked: undefined },
             { label: 'Done', key: 'done', checked: 'on' },
             { label: 'Error', key: 'error', checked: undefined },
           ],
@@ -566,6 +572,7 @@ describe('TodoFilters', () => {
         data: {
           statusOptions: [
             { label: 'Planned', key: 'planned', checked: 'on' },
+            { label: 'In Progress', key: 'in_progress', checked: undefined },
             { label: 'Done', key: 'done', checked: undefined },
             { label: 'Error', key: 'error', checked: undefined },
           ],

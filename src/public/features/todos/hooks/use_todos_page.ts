@@ -25,13 +25,13 @@ export const useTodosPage = ({ http, notifications, dateRange }: UseTodosPagePar
   const client = useMemo(() => new TodosClient(http), [http]);
 
   // UI State
-  const [selectedTab, setSelectedTab] = useState<'table' | 'analytics'>('table');
+  const [selectedTab, setSelectedTab] = useState<'table' | 'analytics' | 'kanban'>('table');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [todoToEdit, setTodoToEdit] = useState<Todo | null>(null);
   const [complianceFrameworkFilter, setComplianceFrameworkFilter] = useState<string | undefined>(undefined);
 
   // Filter State
-  const [searchText, setSearchText] = useState<string>(null);
+  const [searchText, setSearchText] = useState<string>('');
   const [selectedStatuses, setSelectedStatuses] = useState<TodoStatus[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedPriorities, setSelectedPriorities] = useState<TodoPriority[]>([]);
@@ -243,6 +243,7 @@ export const useTodosPage = ({ http, notifications, dateRange }: UseTodosPagePar
       handleEditClick,
       handleFormClose,
       handleFormSubmit,
+      updateTodo,
       deleteTodo,
       refreshAnalytics,
       handleFrameworkFilterChange,

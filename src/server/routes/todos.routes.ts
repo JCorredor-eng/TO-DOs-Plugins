@@ -128,6 +128,7 @@ export function registerTodosRoutes(router: IRouter, logger: Logger): void {
           status: schema.maybe(
             schema.oneOf([
               schema.literal('planned'),
+              schema.literal('in_progress'),
               schema.literal('done'),
               schema.literal('error'),
             ])
@@ -175,6 +176,7 @@ export function registerTodosRoutes(router: IRouter, logger: Logger): void {
           status: schema.maybe(
             schema.oneOf([
               schema.literal('planned'),
+              schema.literal('in_progress'),
               schema.literal('done'),
               schema.literal('error'),
             ])

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "Custom Plugin - API Contracts Documentation",
+  "entryPoints": [
+    "./src/common/constants.ts",
+    "./src/common/todo/todo.types.ts",
+    "./src/common/todo/todo.dtos.ts"
+  ],
+  "out": "docs/generated/typedoc",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/node_modules/**",
+    "**/server/**",
+    "**/public/**"
+  ],
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "includeVersion": true,
+  "readme": "none",
+  "sort": ["source-order"],
+  "cleanOutputDir": true,
+  "plugin": [],
+  "theme": "default",
+  "categorizeByGroup": true,
+  "defaultCategory": "API Contracts",
+  "categoryOrder": [
+    "Core Configuration",
+    "Domain Types",
+    "Data Transfer Objects",
+    "*"
+  ],
+  "searchInComments": true,
+  "visibilityFilters": {
+    "protected": false,
+    "private": false,
+    "inherited": true,
+    "external": false
+  },
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
+  "kindSortOrder": [
+    "Interface",
+    "TypeAlias",
+    "Variable",
+    "Function",
+    "Class",
+    "Enum"
+  ],
+  "tsconfig": "./src/tsconfig.json",
+  "skipErrorChecking": false,
+  "treatWarningsAsErrors": false,
+  "treatValidationWarningsAsErrors": false,
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": false
+  }
+}
